@@ -65,6 +65,7 @@ class DualKnowledgeGraph:
                 graph="financial",
                 source_id=str(row["source_id"]),
                 name=str(row["source_name"]),
+                source_url=str(row.get("source_url", "")),
             )
             self.graph.add_node(
                 fact_id,
@@ -197,6 +198,7 @@ class DualKnowledgeGraph:
                 {
                     "source_id": source_id,
                     "source_name": report.get("name", "Unknown source"),
+                    "source_url": report.get("source_url", ""),
                 }
             )
         return result
