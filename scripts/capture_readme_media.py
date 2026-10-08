@@ -96,17 +96,17 @@ def main() -> None:
             page.goto(BASE_URL, wait_until="networkidle")
             page.screenshot(path=str(ASSET_DIR / "dashboard.png"))
 
-            page.get_by_text("Analysis", exact=True).click()
+            page.get_by_role("tab", name="Analysis").click()
             page.locator('input[aria-label="질문"]').fill("샘플전자 최근 3년 재무상태 분석해줘")
             page.get_by_role("button", name="분석").click()
             page.get_by_text("분석 결과", exact=True).wait_for(timeout=10000)
             page.screenshot(path=str(ASSET_DIR / "analysis.png"))
 
-            page.get_by_text("Evaluation", exact=True).click()
+            page.get_by_role("tab", name="Evaluation").click()
             page.wait_for_timeout(700)
             page.screenshot(path=str(ASSET_DIR / "evaluation.png"))
 
-            page.get_by_text("DART Cohort", exact=True).click()
+            page.get_by_role("tab", name="DART Cohort").click()
             page.wait_for_timeout(700)
             page.screenshot(path=str(ASSET_DIR / "cohort.png"))
 
