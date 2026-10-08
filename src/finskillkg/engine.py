@@ -72,6 +72,7 @@ class FinSkillEngine:
         years = sorted(frame["year"].unique())
         latest = int(years[-1])
         metric = route.metric
+        values = {}
 
         if metric in METRIC_LABELS:
             row = frame[(frame["year"] == latest) & (frame["metric"] == metric)]
@@ -79,6 +80,7 @@ class FinSkillEngine:
                 answer = f"{company} {latest}년 {METRIC_LABELS[metric]} 데이터를 찾지 못했습니다."
             else:
                 value = float(row.iloc[0]["value"])
+                values["value"] = value
                 answer = f"{company}의 {latest}년 {METRIC_LABELS[metric]}은 {format_money(value)}입니다."
         else:
             ratios = self._ratio_by_year(frame)[latest]
@@ -86,12 +88,18 @@ class FinSkillEngine:
                 lines = [f"{company} {latest}년 주요 재무비율입니다."]
                 for key in ["debt_ratio", "operating_margin", "roa", "roe"]:
                     value = ratios.get(key)
+                    if value is not None:
+                        values[key] = value
                     lines.append(
-                        f"- {RATIO_LABELS[key]}: {value:.2f}%" if value is not None else f"- {RATIO_LABELS[key]}: N/A"
+                        f"- {RATIO_LABELS[key]}: {value:.2f}%"
+                        if value is not None
+                        else f"- {RATIO_LABELS[key]}: N/A"
                     )
                 answer = "\n".join(lines)
             else:
                 value = ratios.get(metric)
+                if value is not None:
+                    values["value"] = value
                 label = RATIO_LABELS.get(metric, metric)
                 answer = (
                     f"{company}의 {latest}년 {label}은 {value:.2f}%입니다."
@@ -99,7 +107,13 @@ class FinSkillEngine:
                     else f"{company}의 {latest}년 {label}을 계산할 수 없습니다."
                 )
 
-        return self._result(route, answer, self.graph.sources(company, [latest]))
+        return self._result(
+            route,
+            answer,
+            self.graph.sources(company, [latest]),
+            values=values,
+            years=[latest],
+        )
 
     def _trend(self, route: QueryRoute) -> dict:
         company = route.companies[0]
@@ -107,6 +121,7 @@ class FinSkillEngine:
         facts = self._year_facts(frame)
         ratios = self._ratio_by_year(frame)
         years = sorted(facts)
+        output_values = {}
 
         if route.metric is None:
             revenue_values = [facts[year].get("revenue") for year in years]
@@ -120,12 +135,14 @@ class FinSkillEngine:
                 for year in years:
                     value = facts[year].get("revenue")
                     if value is not None:
+                        output_values[f"revenue:{year}"] = value
                         lines.append(f"  - {year}: {format_money(value)}")
             if margin_values:
                 lines.append(f"- 영업이익률 추세: {trend_direction(margin_values)}")
                 for year in years:
                     value = ratios[year].get("operating_margin")
                     if value is not None:
+                        output_values[f"operating_margin:{year}"] = value
                         lines.append(f"  - {year}: {value:.2f}%")
         else:
             metric = route.metric
@@ -140,6 +157,7 @@ class FinSkillEngine:
                     continue
                 values.append(value)
                 rows.append((year, value))
+                output_values[str(year)] = value
 
             label = METRIC_LABELS.get(metric, RATIO_LABELS.get(metric, metric))
             lines = [
@@ -152,7 +170,13 @@ class FinSkillEngine:
                 else:
                     lines.append(f"- {year}: {value:.2f}%")
 
-        return self._result(route, "\n".join(lines), self.graph.sources(company, years))
+        return self._result(
+            route,
+            "\n".join(lines),
+            self.graph.sources(company, years),
+            values=output_values,
+            years=years,
+        )
 
     def _risk(self, route: QueryRoute) -> dict:
         company = route.companies[0]
@@ -175,7 +199,13 @@ class FinSkillEngine:
             *[f"- {reason}" for reason in risk["reasons"]],
             "- 이 값은 투자등급이나 신용등급이 아니라 프로젝트용 규칙 기반 지표입니다.",
         ]
-        return self._result(route, "\n".join(lines), self.graph.sources(company, years))
+        return self._result(
+            route,
+            "\n".join(lines),
+            self.graph.sources(company, years),
+            values={"risk_score": float(risk["score"])},
+            years=years,
+        )
 
     def _comparison(self, route: QueryRoute) -> dict:
         companies = route.companies[:2]
@@ -187,11 +217,16 @@ class FinSkillEngine:
 
         lines = [f"{year}년 기준 {companies[0]}와 {companies[1]} 비교입니다."]
         evidence = []
+        output_values = {}
         for company in companies:
             frame = frames[company]
             ratios = self._ratio_by_year(frame)[year]
 
             if route.metric is None:
+                for key in ["operating_margin", "debt_ratio", "roe"]:
+                    value = ratios.get(key)
+                    if value is not None:
+                        output_values[f"{company}:{key}"] = value
                 lines.append(
                     f"- {company}: 영업이익률 {self._pct(ratios['operating_margin'])}, "
                     f"부채비율 {self._pct(ratios['debt_ratio'])}, ROE {self._pct(ratios['roe'])}"
@@ -202,18 +237,28 @@ class FinSkillEngine:
                     & (frame["metric"] == route.metric)
                 ]
                 value = None if row.empty else float(row.iloc[0]["value"])
+                if value is not None:
+                    output_values[company] = value
                 label = METRIC_LABELS[route.metric]
                 text = "N/A" if value is None else format_money(value)
                 lines.append(f"- {company}: {label} {text}")
             else:
                 value = ratios.get(route.metric)
+                if value is not None:
+                    output_values[company] = value
                 label = RATIO_LABELS.get(route.metric, route.metric)
                 lines.append(f"- {company}: {label} {self._pct(value)}")
 
             evidence.extend(self.graph.sources(company, [year]))
 
         unique_evidence = list({item["source_id"]: item for item in evidence}.values())
-        return self._result(route, "\n".join(lines), unique_evidence)
+        return self._result(
+            route,
+            "\n".join(lines),
+            unique_evidence,
+            values=output_values,
+            years=[year],
+        )
 
     def _summary(self, route: QueryRoute) -> dict:
         company = route.companies[0]
@@ -235,7 +280,9 @@ class FinSkillEngine:
 
         lines = [
             f"{company} {latest}년 기준 재무 요약입니다.",
-            f"- 매출: {format_money(facts[latest]['revenue'])}" if facts[latest].get("revenue") is not None else "- 매출: N/A",
+            f"- 매출: {format_money(facts[latest]['revenue'])}"
+            if facts[latest].get("revenue") is not None
+            else "- 매출: N/A",
             f"- 영업이익률: {self._pct(ratios[latest].get('operating_margin'))}",
             f"- 부채비율: {self._pct(ratios[latest].get('debt_ratio'))}",
             f"- ROE: {self._pct(ratios[latest].get('roe'))}",
@@ -243,14 +290,33 @@ class FinSkillEngine:
             f"- 영업이익률 추세: {trend_direction(margin)}",
             f"- Risk Signal: {risk['level']}",
         ]
-        return self._result(route, "\n".join(lines), self.graph.sources(company, years))
+        values = {
+            "revenue": facts[latest].get("revenue"),
+            "operating_margin": ratios[latest].get("operating_margin"),
+            "debt_ratio": ratios[latest].get("debt_ratio"),
+            "roe": ratios[latest].get("roe"),
+        }
+        values = {key: value for key, value in values.items() if value is not None}
+        return self._result(
+            route,
+            "\n".join(lines),
+            self.graph.sources(company, years),
+            values=values,
+            years=years,
+        )
 
     @staticmethod
     def _pct(value: float | None) -> str:
         return "N/A" if value is None else f"{value:.2f}%"
 
     @staticmethod
-    def _result(route: QueryRoute, answer: str, evidence: list[dict]) -> dict:
+    def _result(
+        route: QueryRoute,
+        answer: str,
+        evidence: list[dict],
+        values: dict | None = None,
+        years: list[int] | None = None,
+    ) -> dict:
         return {
             "intent": route.intent,
             "target_skill": route.target_skill,
@@ -259,4 +325,6 @@ class FinSkillEngine:
             "metric": route.metric,
             "answer": answer,
             "evidence": evidence,
+            "values": values or {},
+            "years": years or [],
         }
