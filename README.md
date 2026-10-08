@@ -17,6 +17,20 @@
 > `DART_API_KEY`와 LLM API key는 repository에 저장하지 않습니다.  
 > 실제 재무 snapshot은 `scripts/fetch_dart_data.py` 또는 `refresh-dart` workflow로 생성합니다.
 
+## Proposal Alignment
+
+| 제안서 항목 | 구현 |
+| --- | --- |
+| 금융 데이터 기반 KG | OpenDART Financial Fact, Report, Metric, Period를 Financial KG로 구성 |
+| SKILL 표준화 및 재사용 | 7개 `SKILL.md`와 dependency 기반 Skill KG |
+| 두 KG 연결 | `REQUIRES_METRIC` bridge |
+| 할루시네이션 완화 | DART `source_id/source_url`, deterministic calculation, unsupported rate |
+| 성능 검증 | 36개 질문과 3-system ablation |
+| 정량 평가 | numerical accuracy, evidence F1, skill accuracy, unsupported rate, latency |
+| 시연 시스템 | Streamlit Analysis / Evaluation / DART Cohort / KG Explorer |
+
+제안서에서 주장하는 핵심 차이는 단순히 KG를 붙였는지가 아니라, **금융 지식과 수행 절차를 분리한 뒤 두 그래프를 연결했을 때 수치 정확성과 근거 추적성이 실제로 개선되는지**를 같은 질문으로 비교하는 것입니다.
+
 ## Demo
 
 아래 GIF와 이미지는 현재 repository의 Streamlit 구현물을 직접 실행해 캡처한 결과입니다. 별도 금융 API credential 없이 재현할 수 있도록 화면 캡처는 synthetic sample data를 사용하고, 실제 실험은 동일 코드에 OpenDART snapshot을 연결합니다.
