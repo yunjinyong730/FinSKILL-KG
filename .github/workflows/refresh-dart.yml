@@ -1,0 +1,44 @@
+name: refresh-dart
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      DART_API_KEY: ${{ secrets.DART_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Fetch 15-company OpenDART snapshot
+        run: |
+          if [ -z "$DART_API_KEY" ]; then
+            echo "Repository secret DART_API_KEY is required."
+            exit 1
+          fi
+          python scripts/fetch_dart_data.py
+
+      - run: python run_pipeline.py --data data/dart_financials.csv
+
+      - name: Commit snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/dart_financials.csv data/dart_financials.manifest.json
+          if git diff --cached --quiet; then
+            echo "No DART changes"
+          else
+            git commit -m "Refresh OpenDART financial snapshot"
+            git push
+          fi
