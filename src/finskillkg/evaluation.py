@@ -209,13 +209,12 @@ def _llm_prediction(
 
 def _full_prediction(
     task: EvaluationTask,
-    expected: dict,
     engine: FinSkillEngine,
 ) -> dict:
     result = engine.answer(task.question)
     return {
         "target_skill": result["target_skill"],
-        "values": expected["values"],
+        "values": result["values"],
         "source_ids": [item["source_id"] for item in result["evidence"]],
         "answer": result["answer"],
         "skill_plan": result["skill_plan"],
@@ -301,7 +300,7 @@ class EvaluationRunner:
 
         try:
             if system == SYSTEM_FULL:
-                prediction = _full_prediction(task, expected, self.engine)
+                prediction = _full_prediction(task, self.engine)
             elif system == SYSTEM_LLM_ONLY:
                 if self.llm_client is None:
                     raise RuntimeError("LLM 설정이 필요합니다.")
