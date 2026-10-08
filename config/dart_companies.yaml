@@ -1,0 +1,51 @@
+years:
+  - 2023
+  - 2024
+  - 2025
+
+companies:
+  - name: 삼성전자
+    ticker: "005930"
+    sector: 반도체/전자
+  - name: SK하이닉스
+    ticker: "000660"
+    sector: 반도체
+  - name: 현대자동차
+    ticker: "005380"
+    sector: 자동차
+  - name: 기아
+    ticker: "000270"
+    sector: 자동차
+  - name: 현대모비스
+    ticker: "012330"
+    sector: 자동차부품
+  - name: NAVER
+    ticker: "035420"
+    sector: 인터넷/플랫폼
+  - name: 카카오
+    ticker: "035720"
+    sector: 인터넷/플랫폼
+  - name: LG전자
+    ticker: "066570"
+    sector: 전자
+  - name: LG에너지솔루션
+    ticker: "373220"
+    sector: 이차전지
+  - name: 삼성SDI
+    ticker: "006400"
+    sector: 이차전지
+  - name: POSCO홀딩스
+    ticker: "005490"
+    sector: 철강/소재
+  - name: 셀트리온
+    ticker: "068270"
+    sector: 바이오
+  - name: 삼성바이오로직스
+    ticker: "207940"
+    sector: 바이오
+  - name: SK텔레콤
+    ticker: "017670"
+    sector: 통신
+  - name: KT
+    ticker: "030200"
+    sector: 통신
