@@ -210,13 +210,19 @@ def _llm_prediction(
 def _full_prediction(
     task: EvaluationTask,
     engine: FinSkillEngine,
+    registry: SkillRegistry,
+    llm_client: LLMClient | None,
 ) -> dict:
     result = engine.answer(task.question)
+    answer = result["answer"]
+    if llm_client is not None:
+        answer = llm_client.render(task.question, result, registry)
+
     return {
         "target_skill": result["target_skill"],
         "values": result["values"],
         "source_ids": [item["source_id"] for item in result["evidence"]],
-        "answer": result["answer"],
+        "answer": answer,
         "skill_plan": result["skill_plan"],
     }
 
@@ -300,7 +306,12 @@ class EvaluationRunner:
 
         try:
             if system == SYSTEM_FULL:
-                prediction = _full_prediction(task, self.engine)
+                prediction = _full_prediction(
+                    task,
+                    self.engine,
+                    self.registry,
+                    self.llm_client,
+                )
             elif system == SYSTEM_LLM_ONLY:
                 if self.llm_client is None:
                     raise RuntimeError("LLM 설정이 필요합니다.")
