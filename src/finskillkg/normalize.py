@@ -108,7 +108,10 @@ def normalize_dart_records(
             "source_url": source_url,
         }
 
-    return pd.DataFrame(selected.values(), columns=sorted(REQUIRED_COLUMNS))
+    return pd.DataFrame(
+        selected.values(),
+        columns=sorted(REQUIRED_COLUMNS | {"source_url"}),
+    )
 
 
 def load_financial_csv(path: str | Path) -> pd.DataFrame:
