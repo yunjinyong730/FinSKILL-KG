@@ -196,7 +196,7 @@ class FinSkillEngine:
             f"{company} {latest}년 기준 재무 요약입니다.",
             f"- 매출: {format_money(facts[latest]['revenue'])}" if facts[latest].get("revenue") is not None else "- 매출: N/A",
             f"- 영업이익률: {self._pct(ratios[latest].get('operating_margin'))}",
-            f"- �채비율: {self._pct(ratios[latest].get('debt_ratio'))}",
+            f"- 부채비율: {self._pct(ratios[latest].get('debt_ratio'))}",
             f"- ROE: {self._pct(ratios[latest].get('roe'))}",
             f"- 매출 추세: {trend_direction(revenue)}",
             f"- 영업이익률 추세: {trend_direction(margin)}",

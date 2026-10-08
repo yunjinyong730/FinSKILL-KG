@@ -21,7 +21,7 @@ METRIC_QUERY_MAP = [
     ("매출", "revenue"),
     ("자산", "assets"),
     ("부채", "liabilities"),
-    ("자본", "equity"],
+    ("자본", "equity"),
 ]
 
 
