@@ -108,24 +108,49 @@ class FinSkillEngine:
         ratios = self._ratio_by_year(frame)
         years = sorted(facts)
 
-        revenue_values = [facts[year].get("revenue") for year in years]
-        revenue_values = [value for value in revenue_values if value is not None]
-        margin_values = [ratios[year].get("operating_margin") for year in years]
-        margin_values = [value for value in margin_values if value is not None]
+        if route.metric is None:
+            revenue_values = [facts[year].get("revenue") for year in years]
+            revenue_values = [value for value in revenue_values if value is not None]
+            margin_values = [ratios[year].get("operating_margin") for year in years]
+            margin_values = [value for value in margin_values if value is not None]
 
-        lines = [f"{company}의 {years[0]}~{years[-1]}년 재무 추세입니다."]
-        if revenue_values:
-            lines.append(f"- 매출 추세: {trend_direction(revenue_values)}")
+            lines = [f"{company}의 {years[0]}~{years[-1]}년 재무 추세입니다."]
+            if revenue_values:
+                lines.append(f"- 매출 추세: {trend_direction(revenue_values)}")
+                for year in years:
+                    value = facts[year].get("revenue")
+                    if value is not None:
+                        lines.append(f"  - {year}: {format_money(value)}")
+            if margin_values:
+                lines.append(f"- 영업이익률 추세: {trend_direction(margin_values)}")
+                for year in years:
+                    value = ratios[year].get("operating_margin")
+                    if value is not None:
+                        lines.append(f"  - {year}: {value:.2f}%")
+        else:
+            metric = route.metric
+            values = []
+            rows = []
             for year in years:
-                value = facts[year].get("revenue")
-                if value is not None:
-                    lines.append(f"  - {year}: {format_money(value)}")
-        if margin_values:
-            lines.append(f"- 영업이익률 추세: {trend_direction(margin_values)}")
-            for year in years:
-                value = ratios[year].get("operating_margin")
-                if value is not None:
-                    lines.append(f"  - {year}: {value:.2f}%")
+                if metric in METRIC_LABELS:
+                    value = facts[year].get(metric)
+                else:
+                    value = ratios[year].get(metric)
+                if value is None:
+                    continue
+                values.append(value)
+                rows.append((year, value))
+
+            label = METRIC_LABELS.get(metric, RATIO_LABELS.get(metric, metric))
+            lines = [
+                f"{company}의 {years[0]}~{years[-1]}년 {label} 추세는 "
+                f"{trend_direction(values)}입니다."
+            ]
+            for year, value in rows:
+                if metric in METRIC_LABELS:
+                    lines.append(f"- {year}: {format_money(value)}")
+                else:
+                    lines.append(f"- {year}: {value:.2f}%")
 
         return self._result(route, "\n".join(lines), self.graph.sources(company, years))
 
@@ -165,10 +190,26 @@ class FinSkillEngine:
         for company in companies:
             frame = frames[company]
             ratios = self._ratio_by_year(frame)[year]
-            lines.append(
-                f"- {company}: 영업이익률 {self._pct(ratios['operating_margin'])}, "
-                f"부채비율 {self._pct(ratios['debt_ratio'])}, ROE {self._pct(ratios['roe'])}"
-            )
+
+            if route.metric is None:
+                lines.append(
+                    f"- {company}: 영업이익률 {self._pct(ratios['operating_margin'])}, "
+                    f"부채비율 {self._pct(ratios['debt_ratio'])}, ROE {self._pct(ratios['roe'])}"
+                )
+            elif route.metric in METRIC_LABELS:
+                row = frame[
+                    (frame["year"] == year)
+                    & (frame["metric"] == route.metric)
+                ]
+                value = None if row.empty else float(row.iloc[0]["value"])
+                label = METRIC_LABELS[route.metric]
+                text = "N/A" if value is None else format_money(value)
+                lines.append(f"- {company}: {label} {text}")
+            else:
+                value = ratios.get(route.metric)
+                label = RATIO_LABELS.get(route.metric, route.metric)
+                lines.append(f"- {company}: {label} {self._pct(value)}")
+
             evidence.extend(self.graph.sources(company, [year]))
 
         unique_evidence = list({item["source_id"]: item for item in evidence}.values())
