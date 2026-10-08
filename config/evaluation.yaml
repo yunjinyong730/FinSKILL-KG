@@ -1,0 +1,29 @@
+systems:
+  - id: llm_only
+    label: LLM Only
+    financial_kg: false
+    skill_kg: false
+    calculation: llm
+
+  - id: llm_financial_kg
+    label: LLM + Financial KG
+    financial_kg: true
+    skill_kg: false
+    calculation: llm
+
+  - id: llm_skill_financial_kg
+    label: LLM + Skill KG + Financial KG
+    financial_kg: true
+    skill_kg: true
+    calculation: python
+
+metrics:
+  - numeric_accuracy
+  - evidence_f1
+  - skill_accuracy
+  - unsupported_rate
+  - latency_ms
+
+numeric_tolerance:
+  relative: 0.005
+  absolute: 0.1
