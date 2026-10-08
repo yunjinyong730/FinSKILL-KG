@@ -91,6 +91,11 @@ def normalize_dart_records(
             continue
 
         source_id = str(record.get("rcept_no") or default_source_id)
+        source_url = (
+            f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={source_id}"
+            if source_id.isdigit()
+            else ""
+        )
         selected[metric] = {
             "company_code": company_code,
             "company_name": company_name,
@@ -100,6 +105,7 @@ def normalize_dart_records(
             "unit": "KRW",
             "source_id": source_id,
             "source_name": "OpenDART annual report",
+            "source_url": source_url,
         }
 
     return pd.DataFrame(selected.values(), columns=sorted(REQUIRED_COLUMNS))
