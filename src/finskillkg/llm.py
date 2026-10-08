@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 import requests
 
@@ -15,6 +16,34 @@ class LLMClient:
         self.api_key = api_key
         self.model = model
         self.timeout = timeout
+
+    def complete(self, system: str, user: str) -> str:
+        response = requests.post(
+            self.api_url,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "temperature": 0,
+            },
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        return str(payload["choices"][0]["message"]["content"]).strip()
+
+    def complete_json(self, system: str, user: str) -> dict:
+        text = self.complete(system, user)
+        match = re.search(r"\{.*\}", text, flags=re.DOTALL)
+        if not match:
+            raise ValueError(f"LLM JSON 응답을 찾지 못했습니다: {text[:200]}")
+        return json.loads(match.group(0))
 
     def render(
         self,
@@ -44,23 +73,4 @@ class LLMClient:
             f"실행 결과:\n{json.dumps(context, ensure_ascii=False, indent=2)}\n\n"
             f"적용 SKILL:\n{skills_text}"
         )
-
-        response = requests.post(
-            self.api_url,
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                "temperature": 0,
-            },
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
-        payload = response.json()
-        return str(payload["choices"][0]["message"]["content"]).strip()
+        return self.complete(system, user)
