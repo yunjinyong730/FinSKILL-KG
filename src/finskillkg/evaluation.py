@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -84,11 +85,16 @@ def _metric_value(frame: pd.DataFrame, year: int, metric: str) -> float | None:
     raise ValueError(f"지원하지 않는 evaluation metric입니다: {metric}")
 
 
+def _requested_years(question: str) -> list[int]:
+    return [int(value) for value in re.findall(r"(20\d{2})", question)]
+
+
 def resolve_expected(task: EvaluationTask, graph: DualKnowledgeGraph) -> dict:
     if task.task_type == "metric":
         company = task.companies[0]
         frame = graph.facts(company)
-        year = int(frame["year"].max())
+        requested = _requested_years(task.question)
+        year = requested[-1] if requested else int(frame["year"].max())
         value = _metric_value(frame, year, task.metric)
         values = {"value": value} if value is not None else {}
         sources = graph.sources(company, [year])
@@ -102,6 +108,10 @@ def resolve_expected(task: EvaluationTask, graph: DualKnowledgeGraph) -> dict:
         company = task.companies[0]
         frame = graph.facts(company)
         years = sorted(int(year) for year in frame["year"].unique())
+        requested = _requested_years(task.question)
+        if len(requested) >= 2:
+            start, end = requested[0], requested[-1]
+            years = [year for year in years if start <= year <= end]
         values = {}
         used_years = []
         for year in years:
