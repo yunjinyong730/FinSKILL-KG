@@ -45,5 +45,7 @@ jobs:
             echo "No media changes"
           else
             git commit -m "Update README media [skip ci]"
+            git fetch origin align-proposal-evaluation
+            git rebase origin/align-proposal-evaluation
             git push origin HEAD:align-proposal-evaluation
           fi
