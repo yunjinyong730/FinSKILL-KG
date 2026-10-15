@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from .graph import DualKnowledgeGraph
 from .skills import SkillRegistry
@@ -31,6 +32,7 @@ class QueryRoute:
     target_skill: str
     companies: tuple[str, ...]
     metric: str | None
+    years: tuple[int, ...]
     plan: tuple[str, ...]
 
 
@@ -43,6 +45,10 @@ def _find_companies(query: str, graph: DualKnowledgeGraph) -> tuple[str, ...]:
             found.append((position, name))
     found.sort(key=lambda item: item[0])
     return tuple(name for _, name in found)
+
+
+def _find_years(query: str) -> tuple[int, ...]:
+    return tuple(int(value) for value in re.findall(r"(20\d{2})", query))
 
 
 def _find_metric(query: str) -> str | None:
@@ -61,6 +67,7 @@ def route_query(
     text = query.lower()
     companies = _find_companies(query, graph)
     metric = _find_metric(query)
+    years = _find_years(query)
 
     if any(word in text for word in ["비교", "vs", "대비"]):
         intent = "comparison"
@@ -86,5 +93,6 @@ def route_query(
         target_skill=skill,
         companies=companies,
         metric=metric,
+        years=years,
         plan=tuple(registry.plan(skill)),
     )

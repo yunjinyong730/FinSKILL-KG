@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760">
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+<path d="M0,0 L8,4 L0,8 z" fill="#94a3b8"/>
+</marker>
+<style>text{font-family:Arial,"Noto Sans KR",sans-serif}.title{font-size:24px;font-weight:700;fill:#0f172a}.label{font-size:15px;font-weight:700;fill:#0f172a}.small{font-size:12px;fill:#475569}.edge{font-size:11px;fill:#64748b}.box{rx:12;ry:12;stroke-width:1.5}.line{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#arrow)}</style>
+</defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text class="title" x="48" y="52">Financial KG Sample</text>
+<text class="small" x="48" y="78">Company, FinancialFact, Metric, Period, Report 관계의 실제 sample graph</text>
+<rect class="box" x="60" y="300" width="190" height="82" fill="#e0f2fe" stroke="#0284c7"/>
+<text class="label" x="74" y="326">샘플메모리</text>
+<text class="small" x="74" y="347">Company</text>
+<rect class="box" x="1210" y="120" width="210" height="80" fill="#f1f5f9" stroke="#64748b"/>
+<text class="label" x="1224" y="146">2025</text>
+<text class="small" x="1224" y="167">Period</text>
+<rect class="box" x="1180" y="500" width="250" height="96" fill="#fef3c7" stroke="#d97706"/>
+<text class="label" x="1194" y="526">Annual Report</text>
+<text class="small" x="1194" y="547">DEMO002-2025</text>
+<rect class="box" x="400" y="135" width="270" height="82" fill="#ecfeff" stroke="#0891b2"/>
+<text class="label" x="414" y="161">자산총계</text>
+<text class="small" x="414" y="182">90.00조원</text>
+<rect class="box" x="820" y="135" width="230" height="82" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="834" y="161">assets</text>
+<text class="small" x="834" y="182">Metric</text>
+<path class="line" d="M250,341 L400,176"/>
+<text class="edge" x="325" y="251" text-anchor="middle">HAS_FINANCIAL_FACT</text>
+<path class="line" d="M670,176 L820,176"/>
+<text class="edge" x="745" y="169" text-anchor="middle">OF_METRIC</text>
+<path class="line" d="M670,176 L1210,160"/>
+<text class="edge" x="940" y="161" text-anchor="middle">FOR_PERIOD</text>
+<path class="line" d="M670,176 L1180,548"/>
+<text class="edge" x="925" y="355" text-anchor="middle">EXTRACTED_FROM</text>
+<rect class="box" x="400" y="270" width="270" height="82" fill="#ecfeff" stroke="#0891b2"/>
+<text class="label" x="414" y="296">자본총계</text>
+<text class="small" x="414" y="317">48.00조원</text>
+<rect class="box" x="820" y="270" width="230" height="82" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="834" y="296">equity</text>
+<text class="small" x="834" y="317">Metric</text>
+<path class="line" d="M250,341 L400,311"/>
+<text class="edge" x="325" y="319" text-anchor="middle">HAS_FINANCIAL_FACT</text>
+<path class="line" d="M670,311 L820,311"/>
+<text class="edge" x="745" y="304" text-anchor="middle">OF_METRIC</text>
+<path class="line" d="M670,311 L1210,160"/>
+<text class="edge" x="940" y="228" text-anchor="middle">FOR_PERIOD</text>
+<path class="line" d="M670,311 L1180,548"/>
+<text class="edge" x="925" y="422" text-anchor="middle">EXTRACTED_FROM</text>
+<rect class="box" x="400" y="405" width="270" height="82" fill="#ecfeff" stroke="#0891b2"/>
+<text class="label" x="414" y="431">부채총계</text>
+<text class="small" x="414" y="452">42.00조원</text>
+<rect class="box" x="820" y="405" width="230" height="82" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="834" y="431">liabilities</text>
+<text class="small" x="834" y="452">Metric</text>
+<path class="line" d="M250,341 L400,446"/>
+<text class="edge" x="325" y="386" text-anchor="middle">HAS_FINANCIAL_FACT</text>
+<path class="line" d="M670,446 L820,446"/>
+<text class="edge" x="745" y="439" text-anchor="middle">OF_METRIC</text>
+<path class="line" d="M670,446 L1210,160"/>
+<text class="edge" x="940" y="296" text-anchor="middle">FOR_PERIOD</text>
+<path class="line" d="M670,446 L1180,548"/>
+<text class="edge" x="925" y="490" text-anchor="middle">EXTRACTED_FROM</text>
+<rect class="box" x="400" y="540" width="270" height="82" fill="#ecfeff" stroke="#0891b2"/>
+<text class="label" x="414" y="566">당기순이익</text>
+<text class="small" x="414" y="587">4.60조원</text>
+<rect class="box" x="820" y="540" width="230" height="82" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="834" y="566">net_income</text>
+<text class="small" x="834" y="587">Metric</text>
+<path class="line" d="M250,341 L400,581"/>
+<text class="edge" x="325" y="454" text-anchor="middle">HAS_FINANCIAL_FACT</text>
+<path class="line" d="M670,581 L820,581"/>
+<text class="edge" x="745" y="574" text-anchor="middle">OF_METRIC</text>
+<path class="line" d="M670,581 L1210,160"/>
+<text class="edge" x="940" y="363" text-anchor="middle">FOR_PERIOD</text>
+<path class="line" d="M670,581 L1180,548"/>
+<text class="edge" x="925" y="557" text-anchor="middle">EXTRACTED_FROM</text>
+<path class="line" d="M250,360 L1180,570"/>
+<text class="edge" x="715" y="458" text-anchor="middle">HAS_REPORT</text>
+</svg>

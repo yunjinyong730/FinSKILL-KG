@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760">
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+<path d="M0,0 L8,4 L0,8 z" fill="#94a3b8"/>
+</marker>
+<style>text{font-family:Arial,"Noto Sans KR",sans-serif}.title{font-size:24px;font-weight:700;fill:#0f172a}.label{font-size:15px;font-weight:700;fill:#0f172a}.small{font-size:12px;fill:#475569}.edge{font-size:11px;fill:#64748b}.box{rx:12;ry:12;stroke-width:1.5}.line{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#arrow)}</style>
+</defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text class="title" x="48" y="52">Skill KG Sample</text>
+<text class="small" x="48" y="78">SKILL dependency와 Financial KG metric bridge를 함께 표현</text>
+<rect class="box" x="55" y="230" width="205" height="88" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="69" y="256">Financial Statement Extraction</text>
+<text class="small" x="69" y="277">financial_statement_extraction</text>
+<rect class="box" x="305" y="230" width="205" height="88" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="319" y="256">Financial Fact Validation</text>
+<text class="small" x="319" y="277">financial_fact_validation</text>
+<path class="line" d="M305,274 L260,274"/>
+<text class="edge" x="282" y="267" text-anchor="middle">REQUIRES</text>
+<rect class="box" x="555" y="230" width="205" height="88" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="569" y="256">Financial Metric Calculation</text>
+<text class="small" x="569" y="277">financial_metric_calculation</text>
+<path class="line" d="M555,274 L510,274"/>
+<text class="edge" x="532" y="267" text-anchor="middle">REQUIRES</text>
+<rect class="box" x="805" y="230" width="205" height="88" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="819" y="256">Financial Trend Analysis</text>
+<text class="small" x="819" y="277">financial_trend_analysis</text>
+<path class="line" d="M805,274 L760,274"/>
+<text class="edge" x="782" y="267" text-anchor="middle">REQUIRES</text>
+<rect class="box" x="1055" y="230" width="205" height="88" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="1069" y="256">Financial Risk Analysis</text>
+<text class="small" x="1069" y="277">financial_risk_analysis</text>
+<path class="line" d="M1055,274 L1010,274"/>
+<text class="edge" x="1032" y="267" text-anchor="middle">REQUIRES</text>
+<rect class="box" x="1305" y="230" width="205" height="88" fill="#dbeafe" stroke="#2563eb"/>
+<text class="label" x="1319" y="256">Financial Summary Generation</text>
+<text class="small" x="1319" y="277">financial_summary_generation</text>
+<path class="line" d="M1305,274 L1260,274"/>
+<text class="edge" x="1282" y="267" text-anchor="middle">REQUIRES</text>
+<rect class="box" x="805" y="390" width="205" height="88" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="819" y="416">Company Comparison</text>
+<text class="small" x="819" y="437">company_comparison</text>
+<path class="line" d="M805,434 L760,274"/>
+<text class="edge" x="782" y="347" text-anchor="middle">REQUIRES</text>
+<rect class="box" x="250" y="600" width="170" height="62" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="264" y="626">revenue</text>
+<text class="small" x="264" y="647">Financial KG Metric</text>
+<path class="line" d="M1408,318 L335,600"/>
+<text class="edge" x="871" y="452" text-anchor="middle">REQUIRES_METRIC</text>
+<rect class="box" x="470" y="600" width="170" height="62" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="484" y="626">operating_income</text>
+<text class="small" x="484" y="647">Financial KG Metric</text>
+<path class="line" d="M1408,318 L555,600"/>
+<text class="edge" x="981" y="452" text-anchor="middle">REQUIRES_METRIC</text>
+<rect class="box" x="690" y="600" width="170" height="62" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="704" y="626">net_income</text>
+<text class="small" x="704" y="647">Financial KG Metric</text>
+<path class="line" d="M1408,318 L775,600"/>
+<text class="edge" x="1091" y="452" text-anchor="middle">REQUIRES_METRIC</text>
+<rect class="box" x="910" y="600" width="170" height="62" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="924" y="626">assets</text>
+<text class="small" x="924" y="647">Financial KG Metric</text>
+<path class="line" d="M1408,318 L995,600"/>
+<text class="edge" x="1201" y="452" text-anchor="middle">REQUIRES_METRIC</text>
+<rect class="box" x="1130" y="600" width="170" height="62" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="1144" y="626">liabilities</text>
+<text class="small" x="1144" y="647">Financial KG Metric</text>
+<path class="line" d="M1408,318 L1215,600"/>
+<text class="edge" x="1311" y="452" text-anchor="middle">REQUIRES_METRIC</text>
+<rect class="box" x="1350" y="600" width="170" height="62" fill="#f0fdf4" stroke="#16a34a"/>
+<text class="label" x="1364" y="626">equity</text>
+<text class="small" x="1364" y="647">Financial KG Metric</text>
+<path class="line" d="M1408,318 L1435,600"/>
+<text class="edge" x="1421" y="452" text-anchor="middle">REQUIRES_METRIC</text>
+</svg>

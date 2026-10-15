@@ -86,3 +86,11 @@ def test_pipeline_and_engine(tmp_path: Path):
     assert compare["intent"] == "comparison"
     assert "샘플전자" in compare["answer"]
     assert "샘플메모리" in compare["answer"]
+
+
+    explicit_year = engine.answer("샘플전자 2024년 부채비율 알려줘")
+    assert explicit_year["years"] == [2024]
+    assert "2024년" in explicit_year["answer"]
+
+    trend = engine.answer("샘플전자 2023~2024년 매출 추세 알려줘")
+    assert trend["years"] == [2023, 2024]

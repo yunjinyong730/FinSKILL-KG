@@ -27,21 +27,25 @@
 | 할루시네이션 완화 | DART `source_id/source_url`, deterministic calculation, unsupported rate |
 | 성능 검증 | 36개 질문과 3-system ablation |
 | 정량 평가 | numerical accuracy, evidence F1, skill accuracy, unsupported rate, latency |
-| 시연 시스템 | Streamlit Analysis / Evaluation / DART Cohort / KG Explorer |
+| 시연 시스템 | Streamlit Chat Demo / Financial KG / Skill KG / SKILL Explorer / Evaluation |
 
 제안서에서 주장하는 핵심 차이는 단순히 KG를 붙였는지가 아니라, **금융 지식과 수행 절차를 분리한 뒤 두 그래프를 연결했을 때 수치 정확성과 근거 추적성이 실제로 개선되는지**를 같은 질문으로 비교하는 것입니다.
 
 ## Demo
 
-아래 GIF와 이미지는 현재 repository의 Streamlit 구현물을 직접 실행해 캡처한 결과입니다. 별도 금융 API credential 없이 재현할 수 있도록 화면 캡처는 synthetic sample data를 사용하고, 실제 실험은 동일 코드에 OpenDART snapshot을 연결합니다.
+아래 GIF와 이미지는 현재 repository의 Streamlit 데모 사이트를 직접 실행해 캡처한 결과입니다. 화면 캡처는 credential 없이 재현할 수 있도록 synthetic sample data를 사용하고, 실제 실험에서는 동일한 UI가 OpenDART snapshot을 읽습니다.
 
 ![FinSKILL-KG demo](docs/assets/demo.gif)
 
 [원본 데모 영상 보기](docs/assets/demo.webm)
 
-| Overview | Analysis |
+| Overview | Chat Demo |
 | --- | --- |
-| ![Dashboard](docs/assets/dashboard.png) | ![Analysis](docs/assets/analysis.png) |
+| ![Dashboard](docs/assets/dashboard.png) | ![Chat Demo](docs/assets/chat_demo.png) |
+
+| Knowledge Graph | SKILL Explorer |
+| --- | --- |
+| ![KG Explorer](docs/assets/kg_explorer.png) | ![SKILL Explorer](docs/assets/skill_explorer.png) |
 
 | Evaluation | DART Cohort |
 | --- | --- |
@@ -197,6 +201,14 @@ Company
                                   └── EXTRACTED_FROM ──> Report
 ```
 
+### Financial KG 시각화
+
+README에서 구조만 보는 데 그치지 않도록 sample Financial Fact로 실제 KG 일부를 그렸습니다.
+
+![Financial KG sample](docs/assets/financial_kg_sample.svg)
+
+한 Financial Fact는 기업, 지표, 사업연도, 원본 공시에 동시에 연결됩니다. 따라서 최종 답변의 수치에서 Report까지 역추적할 수 있습니다. 데모 사이트의 **Knowledge Graph → Financial KG**에서는 현재 로드된 기업과 사업연도를 선택해 같은 구조를 동적으로 확인할 수 있습니다.
+
 ## Skill KG
 
 ```text
@@ -210,6 +222,12 @@ Skill
 ```
 
 `REQUIRES_METRIC`이 Financial KG와 Skill KG 사이 bridge 역할을 합니다.
+
+### Skill KG 시각화
+
+![Skill KG sample](docs/assets/skill_kg_sample.svg)
+
+회색 노드는 SKILL 간 dependency이고, 녹색 Metric 노드는 Financial KG와 연결되는 bridge입니다. 예를 들어 `financial_summary_generation`을 선택하면 필요한 하위 SKILL과 재무 지표가 한 번에 드러납니다. 데모 사이트의 **Knowledge Graph → Skill KG**에서 중심 SKILL을 바꿔가며 확인할 수 있습니다.
 
 현재 7개 SKILL을 사용합니다.
 
@@ -238,6 +256,14 @@ financial_risk_analysis
         ↓
 financial_summary_generation
 ```
+
+## SKILL 시각화
+
+`SKILL.md`는 단순 prompt 문장이 아니라 metadata와 실행 지침을 함께 가진 파일입니다.
+
+![SKILL anatomy](docs/assets/skill_anatomy.svg)
+
+왼쪽 metadata는 Skill KG를 구성할 때 사용하고, 오른쪽 Objective / Procedure / Constraints는 실제 업무 수행 규칙으로 사용합니다. 데모 사이트의 **SKILL Explorer**에서는 7개 SKILL 중 하나를 선택해 dependency, input/output, tool, validation, required metric과 실제 `SKILL.md` 본문을 함께 볼 수 있습니다.
 
 ## Deterministic Financial Calculation
 
@@ -404,25 +430,43 @@ python scripts/run_evaluation.py \
 python scripts/run_evaluation.py --limit 6
 ```
 
-## Dashboard
+## Demo Site
+
+최종 사용자용 데모는 `app.py`의 Streamlit 웹 앱으로 구현했습니다. 사용자는 질문을 입력하고 답변을 받은 뒤, 그 답변에 사용된 SKILL 순서와 evidence를 바로 확인할 수 있습니다.
 
 ```bash
 streamlit run app.py
 ```
 
-`data/dart_financials.csv`가 있으면 자동으로 실제 DART 데이터를 사용하고, 없으면 `data/sample_financials.csv`로 실행됩니다.
+`data/dart_financials.csv`가 있으면 실제 DART 데이터를 사용하고, 없으면 `data/sample_financials.csv`로 동작합니다. LLM 설정이 없어도 Financial KG 조회, Skill routing, 재무비율 계산, trend/risk 분석은 실행되며, LLM을 연결하면 계산된 결과를 최종 문장으로만 정리합니다.
 
-화면은 다섯 탭으로 구성했습니다.
+현재 데모 사이트는 여섯 영역으로 구성했습니다.
 
 ```text
 Overview
-Analysis
+Chat Demo
+Knowledge Graph
+SKILL Explorer
 Evaluation
 DART Cohort
-KG Explorer
 ```
 
+- **Chat Demo**: 사용자가 실제 질문을 입력하고 답변, 실행 SKILL, evidence 확인
+- **Knowledge Graph**: Financial KG와 Skill KG를 Graphviz로 시각화
+- **SKILL Explorer**: 개별 SKILL의 metadata와 `SKILL.md` 본문 확인
+- **Evaluation**: 3-system benchmark 결과 확인
+- **DART Cohort**: 15개 실험 대상 기업과 데이터 로드 상태 확인
+
 `Evaluation` 탭은 `outputs/evaluation/summary.csv`가 생성되면 최신 benchmark 표와 비교 chart를 자동으로 표시합니다.
+
+### Docker로 데모 사이트 실행
+
+```bash
+docker build -t finskill-kg .
+docker run --rm -p 8501:8501 finskill-kg
+```
+
+이후 브라우저에서 `http://localhost:8501`로 접속하면 됩니다. `.streamlit/config.toml`과 `Dockerfile`을 포함해 Streamlit Community Cloud, Render, Cloud Run 같은 환경에도 그대로 배포할 수 있도록 구성했습니다. 자세한 배포 절차는 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)에 정리했습니다.
 
 ## Quick Start
 
@@ -474,6 +518,7 @@ python -m pytest -q
 ```text
 .
 ├── app.py
+├── Dockerfile
 ├── run_pipeline.py
 ├── config/
 │   ├── dart_companies.yaml
@@ -483,9 +528,15 @@ python -m pytest -q
 │   ├── sample_financials.csv
 │   └── evaluation_questions.jsonl
 ├── docs/
+│   ├── DEPLOYMENT.md
 │   └── assets/
 │       ├── dashboard.png
-│       ├── analysis.png
+│       ├── chat_demo.png
+│       ├── kg_explorer.png
+│       ├── skill_explorer.png
+│       ├── financial_kg_sample.svg
+│       ├── skill_kg_sample.svg
+│       ├── skill_anatomy.svg
 │       ├── evaluation.png
 │       ├── cohort.png
 │       ├── demo.gif
@@ -494,6 +545,7 @@ python -m pytest -q
 │   ├── fetch_dart_data.py
 │   ├── run_evaluation.py
 │   ├── export_neo4j.py
+│   ├── generate_readme_graphs.py
 │   └── capture_readme_media.py
 ├── skills/
 │   ├── financial_statement_extraction/SKILL.md
@@ -516,6 +568,7 @@ python -m pytest -q
 │   ├── evaluation.py
 │   ├── llm.py
 │   ├── neo4j_store.py
+│   ├── visualize.py
 │   └── pipeline.py
 └── tests/
 ```
@@ -527,6 +580,7 @@ README의 화면과 GIF도 코드로 다시 만들 수 있습니다.
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 python -m playwright install chromium
+python scripts/generate_readme_graphs.py
 python scripts/capture_readme_media.py
 ```
 

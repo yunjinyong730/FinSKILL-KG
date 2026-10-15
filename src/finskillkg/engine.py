@@ -69,9 +69,16 @@ class FinSkillEngine:
     def _metric(self, route: QueryRoute) -> dict:
         company = route.companies[0]
         frame = self.graph.facts(company)
-        years = sorted(frame["year"].unique())
-        latest = int(years[-1])
+        years = sorted(int(value) for value in frame["year"].unique())
+        latest = route.years[-1] if route.years else years[-1]
         metric = route.metric
+        if latest not in years:
+            return self._result(
+                route,
+                f"{company} {latest}년 데이터를 찾지 못했습니다. 사용 가능한 연도: {', '.join(map(str, years))}",
+                [],
+                years=[latest],
+            )
         values = {}
 
         if metric in METRIC_LABELS:
@@ -121,6 +128,17 @@ class FinSkillEngine:
         facts = self._year_facts(frame)
         ratios = self._ratio_by_year(frame)
         years = sorted(facts)
+        if len(route.years) >= 2:
+            start, end = route.years[0], route.years[-1]
+            years = [year for year in years if start <= year <= end]
+        elif len(route.years) == 1:
+            years = [year for year in years if year == route.years[0]]
+        if not years:
+            return self._result(
+                route,
+                f"{company}에서 요청한 연도의 데이터를 찾지 못했습니다.",
+                [],
+            )
         output_values = {}
 
         if route.metric is None:
@@ -183,6 +201,16 @@ class FinSkillEngine:
         frame = self.graph.facts(company)
         ratios = self._ratio_by_year(frame)
         years = sorted(ratios)
+        if route.years:
+            target = route.years[-1]
+            if target not in years:
+                return self._result(
+                    route,
+                    f"{company} {target}년 데이터를 찾지 못했습니다.",
+                    [],
+                    years=[target],
+                )
+            years = [year for year in years if year <= target]
         latest = years[-1]
         margin_values = [
             ratios[year]["operating_margin"]
@@ -213,7 +241,18 @@ class FinSkillEngine:
         common_years = set(frames[companies[0]]["year"]) & set(frames[companies[1]]["year"])
         if not common_years:
             return self._result(route, "두 기업의 공통 분석 연도가 없습니다.", [])
-        year = int(max(common_years))
+        if route.years:
+            requested = route.years[-1]
+            if requested not in common_years:
+                return self._result(
+                    route,
+                    f"{requested}년은 두 기업의 공통 분석 연도가 아닙니다.",
+                    [],
+                    years=[requested],
+                )
+            year = requested
+        else:
+            year = int(max(common_years))
 
         lines = [f"{year}년 기준 {companies[0]}와 {companies[1]} 비교입니다."]
         evidence = []
@@ -266,6 +305,16 @@ class FinSkillEngine:
         facts = self._year_facts(frame)
         ratios = self._ratio_by_year(frame)
         years = sorted(facts)
+        if route.years:
+            requested = route.years[-1]
+            if requested not in years:
+                return self._result(
+                    route,
+                    f"{company} {requested}년 데이터를 찾지 못했습니다.",
+                    [],
+                    years=[requested],
+                )
+            years = [year for year in years if year <= requested]
         latest = years[-1]
 
         revenue = [facts[year].get("revenue") for year in years]

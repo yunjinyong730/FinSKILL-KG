@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - align-proposal-evaluation
+      - visualize-demo-site
     paths:
       - app.py
       - src/**
@@ -12,6 +13,7 @@ on:
       - data/**
       - config/**
       - scripts/capture_readme_media.py
+      - scripts/generate_readme_graphs.py
       - requirements.txt
       - requirements-dev.txt
       - .github/workflows/readme-media.yml
@@ -39,6 +41,7 @@ jobs:
 
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: python -m playwright install --with-deps chromium
+      - run: python scripts/generate_readme_graphs.py
       - run: python scripts/capture_readme_media.py
 
       - name: Commit media
