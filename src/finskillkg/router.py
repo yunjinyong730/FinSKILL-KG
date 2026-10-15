@@ -48,7 +48,7 @@ def _find_companies(query: str, graph: DualKnowledgeGraph) -> tuple[str, ...]:
 
 
 def _find_years(query: str) -> tuple[int, ...]:
-    return tuple(int(value) for value in re.findall(r"(20\\d{2})", query))
+    return tuple(int(value) for value in re.findall(r"(20\d{2})", query))
 
 
 def _find_metric(query: str) -> str | None:
