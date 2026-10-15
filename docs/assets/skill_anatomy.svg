@@ -1,59 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760">
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="900" viewBox="0 0 1560 900">
 <defs>
 <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
-<path d="M0,0 L8,4 L0,8 z" fill="#94a3b8"/>
+<path d="M0,0 L8,4 L0,8 z" fill="#64748B"/>
 </marker>
-<style>text{font-family:Arial,"Noto Sans KR",sans-serif}.title{font-size:24px;font-weight:700;fill:#0f172a}.label{font-size:15px;font-weight:700;fill:#0f172a}.small{font-size:12px;fill:#475569}.edge{font-size:11px;fill:#64748b}.box{rx:12;ry:12;stroke-width:1.5}.line{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#arrow)}</style>
+<filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+<feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.08"/>
+</filter>
+<style>
+text{font-family:Arial,"Noto Sans KR",sans-serif}
+.title{font-size:28px;font-weight:700;fill:#0F172A}
+.subtitle{font-size:13px;fill:#64748B}
+.section{font-size:12px;font-weight:700;fill:#64748B;letter-spacing:.08em}
+.label{font-size:15px;font-weight:700;fill:#0F172A}
+.small{font-size:12px;fill:#475569}
+.tiny{font-size:10.5px;fill:#64748B}
+.edge{font-size:10px;fill:#64748B}
+.line{stroke:#CBD5E1;stroke-width:1.5;fill:none;marker-end:url(#arrow)}
+.dash{stroke:#CBD5E1;stroke-width:1.5;stroke-dasharray:5 5;fill:none;marker-end:url(#arrow)}
+</style>
 </defs>
-<rect width="100%" height="100%" fill="#ffffff"/>
-<text class="title" x="48" y="52">SKILL.md Anatomy</text>
-<text class="small" x="48" y="78">하나의 SKILL은 metadata와 실행 지침을 함께 가진다.</text>
-<rect class="box" x="560" y="120" width="380" height="92" fill="#dbeafe" stroke="#2563eb"/>
-<text class="label" x="574" y="146">Financial Metric Calculation</text>
-<text class="small" x="574" y="167">financial_metric_calculation</text>
-<rect class="box" x="100" y="270" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
-<text class="label" x="114" y="296">requires</text>
-<text class="small" x="114" y="317">financial_fact_validation</text>
-<path class="line" d="M560,165 L580,302"/>
-<text class="edge" x="570" y="226" text-anchor="middle">REQUIRES</text>
-<rect class="box" x="100" y="352" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
-<text class="label" x="114" y="378">consumes</text>
-<text class="small" x="114" y="399">ValidatedFinancialFact</text>
-<path class="line" d="M560,165 L580,384"/>
-<text class="edge" x="570" y="267" text-anchor="middle">CONSUMES</text>
-<rect class="box" x="100" y="434" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
-<text class="label" x="114" y="460">produces</text>
-<text class="small" x="114" y="481">FinancialRatio</text>
-<path class="line" d="M560,165 L580,466"/>
-<text class="edge" x="570" y="308" text-anchor="middle">PRODUCES</text>
-<rect class="box" x="100" y="516" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
-<text class="label" x="114" y="542">tools</text>
-<text class="small" x="114" y="563">Python</text>
-<path class="line" d="M560,165 L580,548"/>
-<text class="edge" x="570" y="349" text-anchor="middle">TOOLS</text>
-<rect class="box" x="100" y="598" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
-<text class="label" x="114" y="624">validation</text>
-<text class="small" x="114" y="645">denominator_nonzero, formula_check</text>
-<path class="line" d="M560,165 L580,630"/>
-<text class="edge" x="570" y="390" text-anchor="middle">VALIDATION</text>
-<rect class="box" x="950" y="270" width="430" height="72" fill="#fff7ed" stroke="#ea580c"/>
-<text class="label" x="964" y="296">Objective</text>
-<text class="small" x="964" y="317">무엇을 수행하는 Skill인지 정의</text>
-<path class="line" d="M940,165 L950,306"/>
-<text class="edge" x="945" y="228" text-anchor="middle">OBJECTIVE</text>
-<rect class="box" x="950" y="370" width="430" height="72" fill="#fff7ed" stroke="#ea580c"/>
-<text class="label" x="964" y="396">Procedure</text>
-<text class="small" x="964" y="417">입력 확인 → 공식 계산 → 결과 반환</text>
-<path class="line" d="M940,165 L950,406"/>
-<text class="edge" x="945" y="278" text-anchor="middle">PROCEDURE</text>
-<rect class="box" x="950" y="470" width="430" height="72" fill="#fff7ed" stroke="#ea580c"/>
-<text class="label" x="964" y="496">Constraints</text>
-<text class="small" x="964" y="517">없는 값을 만들지 않고 N/A 처리</text>
-<path class="line" d="M940,165 L950,506"/>
-<text class="edge" x="945" y="328" text-anchor="middle">CONSTRAINTS</text>
-<rect class="box" x="950" y="570" width="430" height="72" fill="#fff7ed" stroke="#ea580c"/>
-<text class="label" x="964" y="596">required_metrics</text>
-<text class="small" x="964" y="617">revenue, operating_income, net_income, assets, liabilities, equity</text>
-<path class="line" d="M940,165 L950,606"/>
-<text class="edge" x="945" y="378" text-anchor="middle">REQUIRED_METRICS</text>
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<text class="title" x="52" y="54">SKILL.md</text>
+<text class="subtitle" x="52" y="82">Prompt 문장 하나가 아니라, 실행 순서와 입출력 조건을 함께 저장하는 작은 작업 단위</text>
+<rect x="60" y="140" width="1440" height="112" rx="16" fill="#EFF6FF" stroke="#2563EB" stroke-width="1.3" filter="url(#soft)"/>
+<text class="tiny" x="76" y="160">FINANCIAL_METRIC_CALCULATION</text>
+<text class="label" x="76" y="183">Financial Metric Calculation</text>
+<text class="small" x="76" y="202">검증된 재무 수치로 부채비율, 영업이익률, ROA, ROE, 매출성장률을 계산한다.</text>
+<text class="section" x="60" y="318">METADATA</text>
+<rect x="60" y="340" width="620" height="450" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.3" filter="url(#soft)"/>
+<text class="tiny" x="92" y="382">REQUIRES</text>
+<text class="small" x="245" y="382">financial_fact_validation</text>
+<line x1="92" y1="401" x2="648" y2="401" stroke="#E2E8F0"/>
+<text class="tiny" x="92" y="444">CONSUMES</text>
+<text class="small" x="245" y="444">ValidatedFinancialFact</text>
+<line x1="92" y1="463" x2="648" y2="463" stroke="#E2E8F0"/>
+<text class="tiny" x="92" y="506">PRODUCES</text>
+<text class="small" x="245" y="506">FinancialRatio</text>
+<line x1="92" y1="525" x2="648" y2="525" stroke="#E2E8F0"/>
+<text class="tiny" x="92" y="568">TOOLS</text>
+<text class="small" x="245" y="568">Python</text>
+<line x1="92" y1="587" x2="648" y2="587" stroke="#E2E8F0"/>
+<text class="tiny" x="92" y="630">VALIDATION</text>
+<text class="small" x="245" y="630">denominator_nonzero, formula_check</text>
+<line x1="92" y1="649" x2="648" y2="649" stroke="#E2E8F0"/>
+<text class="tiny" x="92" y="692">REQUIRED_METRICS</text>
+<text class="small" x="245" y="692">revenue, operating_income, net_income, assets, liabilities, equity</text>
+<text class="section" x="760" y="318">INSTRUCTION</text>
+<rect x="760" y="340" width="740" height="450" rx="18" fill="#0F172A" stroke="#0F172A" stroke-width="1.3" filter="url(#soft)"/>
+<text x="800" y="390" font-family="monospace" font-size="12" font-weight="700" fill="#93C5FD">Objective</text>
+<text x="930" y="390" font-family="monospace" font-size="12" fill="#E2E8F0">재무비율을 동일한 공식으로 계산한다.</text>
+<text x="800" y="438" font-family="monospace" font-size="12" font-weight="700" fill="#93C5FD">Procedure</text>
+<text x="930" y="438" font-family="monospace" font-size="12" fill="#E2E8F0">1. 필요한 Financial Fact 확인</text>
+<text x="930" y="486" font-family="monospace" font-size="12" fill="#E2E8F0">2. Python 공식으로 계산</text>
+<text x="930" y="534" font-family="monospace" font-size="12" fill="#E2E8F0">3. 사용한 source_id와 함께 반환</text>
+<text x="800" y="582" font-family="monospace" font-size="12" font-weight="700" fill="#93C5FD">Constraints</text>
+<text x="930" y="582" font-family="monospace" font-size="12" fill="#E2E8F0">없는 값은 만들지 않고 N/A 처리</text>
+<text x="930" y="630" font-family="monospace" font-size="12" fill="#E2E8F0">분모가 0이면 계산하지 않음</text>
+<text x="800" y="735" font-family="monospace" font-size="11" fill="#94A3B8">SKILL.md = metadata + procedure + constraint</text>
 </svg>
