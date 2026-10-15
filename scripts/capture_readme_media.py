@@ -110,7 +110,7 @@ def main() -> None:
             page.screenshot(path=str(ASSET_DIR / "kg_explorer.png"))
 
             page.get_by_role("tab", name="SKILL Explorer").click()
-            page.get_by_text("SKILL Explorer", exact=True).wait_for(timeout=10000)
+            page.get_by_role("heading", name="SKILL Explorer").wait_for(timeout=10000)
             page.wait_for_timeout(900)
             page.screenshot(path=str(ASSET_DIR / "skill_explorer.png"))
 
