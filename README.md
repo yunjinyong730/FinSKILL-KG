@@ -466,7 +466,7 @@ docker build -t finskill-kg .
 docker run --rm -p 8501:8501 finskill-kg
 ```
 
-이후 브라우저에서 `http://localhost:8501`로 접속하면 됩니다. `.streamlit/config.toml`과 `Dockerfile`을 포함해 Streamlit Community Cloud, Render, Cloud Run 같은 환경에도 그대로 배포할 수 있도록 구성했습니다.
+이후 브라우저에서 `http://localhost:8501`로 접속하면 됩니다. `.streamlit/config.toml`과 `Dockerfile`을 포함해 Streamlit Community Cloud, Render, Cloud Run 같은 환경에도 그대로 배포할 수 있도록 구성했습니다. 자세한 배포 절차는 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)에 정리했습니다.
 
 ## Quick Start
 
@@ -518,6 +518,7 @@ python -m pytest -q
 ```text
 .
 ├── app.py
+├── Dockerfile
 ├── run_pipeline.py
 ├── config/
 │   ├── dart_companies.yaml
@@ -527,6 +528,7 @@ python -m pytest -q
 │   ├── sample_financials.csv
 │   └── evaluation_questions.jsonl
 ├── docs/
+│   ├── DEPLOYMENT.md
 │   └── assets/
 │       ├── dashboard.png
 │       ├── chat_demo.png
