@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760">
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+<path d="M0,0 L8,4 L0,8 z" fill="#94a3b8"/>
+</marker>
+<style>text{font-family:Arial,"Noto Sans KR",sans-serif}.title{font-size:24px;font-weight:700;fill:#0f172a}.label{font-size:15px;font-weight:700;fill:#0f172a}.small{font-size:12px;fill:#475569}.edge{font-size:11px;fill:#64748b}.box{rx:12;ry:12;stroke-width:1.5}.line{stroke:#94a3b8;stroke-width:1.5;fill:none;marker-end:url(#arrow)}</style>
+</defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text class="title" x="48" y="52">SKILL.md Anatomy</text>
+<text class="small" x="48" y="78">하나의 SKILL은 metadata와 실행 지침을 함께 가진다.</text>
+<rect class="box" x="560" y="120" width="380" height="92" fill="#dbeafe" stroke="#2563eb"/>
+<text class="label" x="574" y="146">Financial Metric Calculation</text>
+<text class="small" x="574" y="167">financial_metric_calculation</text>
+<rect class="box" x="100" y="270" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="114" y="296">requires</text>
+<text class="small" x="114" y="317">financial_fact_validation</text>
+<path class="line" d="M560,165 L580,302"/>
+<text class="edge" x="570" y="226" text-anchor="middle">REQUIRES</text>
+<rect class="box" x="100" y="352" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="114" y="378">consumes</text>
+<text class="small" x="114" y="399">ValidatedFinancialFact</text>
+<path class="line" d="M560,165 L580,384"/>
+<text class="edge" x="570" y="267" text-anchor="middle">CONSUMES</text>
+<rect class="box" x="100" y="434" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="114" y="460">produces</text>
+<text class="small" x="114" y="481">FinancialRatio</text>
+<path class="line" d="M560,165 L580,466"/>
+<text class="edge" x="570" y="308" text-anchor="middle">PRODUCES</text>
+<rect class="box" x="100" y="516" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="114" y="542">tools</text>
+<text class="small" x="114" y="563">Python</text>
+<path class="line" d="M560,165 L580,548"/>
+<text class="edge" x="570" y="349" text-anchor="middle">TOOLS</text>
+<rect class="box" x="100" y="598" width="480" height="64" fill="#f8fafc" stroke="#64748b"/>
+<text class="label" x="114" y="624">validation</text>
+<text class="small" x="114" y="645">denominator_nonzero, formula_check</text>
+<path class="line" d="M560,165 L580,630"/>
+<text class="edge" x="570" y="390" text-anchor="middle">VALIDATION</text>
+<rect class="box" x="950" y="270" width="430" height="72" fill="#fff7ed" stroke="#ea580c"/>
+<text class="label" x="964" y="296">Objective</text>
+<text class="small" x="964" y="317">무엇을 수행하는 Skill인지 정의</text>
+<path class="line" d="M940,165 L950,306"/>
+<text class="edge" x="945" y="228" text-anchor="middle">OBJECTIVE</text>
+<rect class="box" x="950" y="370" width="430" height="72" fill="#fff7ed" stroke="#ea580c"/>
+<text class="label" x="964" y="396">Procedure</text>
+<text class="small" x="964" y="417">입력 확인 → 공식 계산 → 결과 반환</text>
+<path class="line" d="M940,165 L950,406"/>
+<text class="edge" x="945" y="278" text-anchor="middle">PROCEDURE</text>
+<rect class="box" x="950" y="470" width="430" height="72" fill="#fff7ed" stroke="#ea580c"/>
+<text class="label" x="964" y="496">Constraints</text>
+<text class="small" x="964" y="517">없는 값을 만들지 않고 N/A 처리</text>
+<path class="line" d="M940,165 L950,506"/>
+<text class="edge" x="945" y="328" text-anchor="middle">CONSTRAINTS</text>
+<rect class="box" x="950" y="570" width="430" height="72" fill="#fff7ed" stroke="#ea580c"/>
+<text class="label" x="964" y="596">required_metrics</text>
+<text class="small" x="964" y="617">revenue, operating_income, net_income, assets, liabilities, equity</text>
+<path class="line" d="M940,165 L950,606"/>
+<text class="edge" x="945" y="378" text-anchor="middle">REQUIRED_METRICS</text>
+</svg>
