@@ -32,7 +32,7 @@ def financial_kg_dot(
 ) -> str:
     frame = graph.facts(company_name)
     if frame.empty:
-        return "digraph G { label=\"No financial facts\"; }"
+        return 'digraph G { label="No financial facts"; }'
 
     available_years = sorted(int(value) for value in frame["year"].unique())
     selected_year = int(year) if year in available_years else available_years[-1]
@@ -44,33 +44,63 @@ def financial_kg_dot(
 
     source_rows = graph.sources(company_name, [selected_year])
     source_id = source_rows[0]["source_id"] if source_rows else "unknown"
-    report_label = f"Report\\n{source_id}"
 
     lines = [
         "digraph FinancialKG {",
-        '  graph [rankdir=LR, bgcolor="transparent", pad="0.25", nodesep="0.28", ranksep="0.65"];',
-        '  node [fontname="Arial", fontsize=11, shape=box, style="rounded,filled", color="#64748b", fillcolor="#f8fafc", fontcolor="#0f172a"];',
-        '  edge [fontname="Arial", fontsize=9, color="#94a3b8", fontcolor="#475569", arrowsize=0.7];',
-        f'  company [label="{_escape(company_name)}", shape=box, fillcolor="#e0f2fe", color="#0284c7", penwidth=1.5];',
-        f'  period [label="Period\\n{selected_year}", shape=ellipse, fillcolor="#f1f5f9"];',
-        f'  report [label="{_escape(report_label)}", shape=note, fillcolor="#fef3c7", color="#d97706"];',
-        '  company -> report [label="HAS_REPORT"];',
+        '  graph [rankdir=LR, bgcolor="transparent", pad="0.35", nodesep="0.22", ranksep="0.95", splines=polyline, newrank=true];',
+        '  node [fontname="Arial", fontsize=10.5, shape=box, style="rounded,filled", margin="0.14,0.10", color="#CBD5E1", fillcolor="#FFFFFF", fontcolor="#0F172A", penwidth=1.2];',
+        '  edge [fontname="Arial", fontsize=8.5, color="#94A3B8", fontcolor="#64748B", arrowsize=0.65, penwidth=1.1];',
+        '  subgraph cluster_company { label="COMPANY"; labelloc="t"; labeljust="l"; fontsize=9; fontcolor="#64748B"; color="#E2E8F0"; style="rounded"; bgcolor="#F8FAFC";',
+        f'    company [label="{_escape(company_name)}\nCompany", fillcolor="#EFF6FF", color="#2563EB", penwidth=1.5];',
+        "  }",
+        '  subgraph cluster_facts { label="FINANCIAL FACTS"; labelloc="t"; labeljust="l"; fontsize=9; fontcolor="#64748B"; color="#E2E8F0"; style="rounded"; bgcolor="#FCFCFD";',
     ]
 
+    fact_ids = []
+    metric_ids = []
     for idx, row in enumerate(year_frame.itertuples(index=False)):
         metric = str(row.metric)
         metric_name = METRIC_LABELS.get(metric, metric)
+        value_text = format_money(float(row.value), str(row.unit))
         fact_id = f"fact_{idx}"
         metric_id = f"metric_{idx}"
-        value_text = format_money(float(row.value), str(row.unit))
+        fact_ids.append(fact_id)
+        metric_ids.append(metric_id)
+        lines.append(
+            f'    {fact_id} [label="{_escape(metric_name)}\n{_escape(value_text)}", fillcolor="#ECFEFF", color="#0891B2"];'
+        )
+    lines.append("  }")
+
+    lines.extend(
+        [
+            '  subgraph cluster_context { label="CONTEXT"; labelloc="t"; labeljust="l"; fontsize=9; fontcolor="#64748B"; color="#E2E8F0"; style="rounded"; bgcolor="#FCFCFD";',
+            f'    period [label="{selected_year}\nPeriod", fillcolor="#F8FAFC", color="#94A3B8"];',
+        ]
+    )
+    for idx, row in enumerate(year_frame.itertuples(index=False)):
+        metric = str(row.metric)
+        metric_id = f"metric_{idx}"
+        lines.append(
+            f'    {metric_id} [label="{_escape(metric)}\nMetric", fillcolor="#F0FDF4", color="#16A34A"];'
+        )
+    lines.append("  }")
+
+    lines.extend(
+        [
+            '  subgraph cluster_source { label="PROVENANCE"; labelloc="t"; labeljust="l"; fontsize=9; fontcolor="#64748B"; color="#E2E8F0"; style="rounded"; bgcolor="#FCFCFD";',
+            f'    report [label="OpenDART 사업보고서\n{_escape(source_id)}", shape=note, fillcolor="#FFFBEB", color="#D97706"];',
+            "  }",
+            '  company -> report [label="HAS_REPORT", style=dashed, color="#CBD5E1"];',
+        ]
+    )
+
+    for idx, fact_id in enumerate(fact_ids):
         lines.extend(
             [
-                f'  {fact_id} [label="{_escape(metric_name)}\\n{_escape(value_text)}", fillcolor="#ecfeff", color="#0891b2"];',
-                f'  {metric_id} [label="Metric\\n{_escape(metric)}", fillcolor="#f0fdf4", color="#16a34a"];',
                 f'  company -> {fact_id} [label="HAS_FINANCIAL_FACT"];',
-                f'  {fact_id} -> {metric_id} [label="OF_METRIC"];',
-                f'  {fact_id} -> period [label="FOR_PERIOD"];',
-                f'  {fact_id} -> report [label="EXTRACTED_FROM"];',
+                f'  {fact_id} -> {metric_ids[idx]} [label="OF_METRIC", color="#86B99A"];',
+                f'  {fact_id} -> period [label="FOR_PERIOD", color="#CBD5E1"];',
+                f'  {fact_id} -> report [label="EXTRACTED_FROM", color="#D6B56D"];',
             ]
         )
 
@@ -84,18 +114,22 @@ def skill_kg_dot(
 ) -> str:
     lines = [
         "digraph SkillKG {",
-        '  graph [rankdir=LR, bgcolor="transparent", pad="0.25", nodesep="0.35", ranksep="0.7"];',
-        '  node [fontname="Arial", fontsize=10, shape=box, style="rounded,filled", color="#64748b", fillcolor="#f8fafc", fontcolor="#0f172a"];',
-        '  edge [fontname="Arial", fontsize=9, color="#94a3b8", fontcolor="#475569", arrowsize=0.7];',
+        '  graph [rankdir=TB, bgcolor="transparent", pad="0.35", nodesep="0.35", ranksep="0.55", splines=polyline, newrank=true];',
+        '  node [fontname="Arial", fontsize=10.5, shape=box, style="rounded,filled", margin="0.16,0.11", color="#CBD5E1", fillcolor="#FFFFFF", fontcolor="#0F172A", penwidth=1.2];',
+        '  edge [fontname="Arial", fontsize=8.5, color="#94A3B8", fontcolor="#64748B", arrowsize=0.65, penwidth=1.1];',
+        '  subgraph cluster_skills { label="SKILL DEPENDENCY"; labelloc="t"; labeljust="l"; fontsize=9; fontcolor="#64748B"; color="#E2E8F0"; style="rounded"; bgcolor="#FCFCFD";',
     ]
 
     for skill in registry.skills.values():
-        fill = "#dbeafe" if skill.skill_id == focus_skill else "#f8fafc"
-        color = "#2563eb" if skill.skill_id == focus_skill else "#64748b"
-        label = skill.name.replace(" ", "\\n", 1)
+        fill = "#EFF6FF" if skill.skill_id == focus_skill else "#FFFFFF"
+        color = "#2563EB" if skill.skill_id == focus_skill else "#CBD5E1"
+        penwidth = "1.7" if skill.skill_id == focus_skill else "1.2"
         lines.append(
-            f'  "skill:{_escape(skill.skill_id)}" [label="{_escape(label)}", fillcolor="{fill}", color="{color}"];'
+            f'    "skill:{_escape(skill.skill_id)}" '
+            f'[label="{_escape(skill.name)}\n{_escape(skill.skill_id)}", '
+            f'fillcolor="{fill}", color="{color}", penwidth={penwidth}];'
         )
+    lines.append("  }")
 
     for skill in registry.skills.values():
         for dependency in skill.requires:
@@ -106,16 +140,23 @@ def skill_kg_dot(
 
     if focus_skill in registry.skills:
         skill = registry.skills[focus_skill]
-        for metric in skill.required_metrics:
-            metric_id = f"metric:{metric}"
+        if skill.required_metrics:
             lines.append(
-                f'  "{_escape(metric_id)}" [label="Metric\\n{_escape(metric)}", '
-                'shape=ellipse, fillcolor="#f0fdf4", color="#16a34a"];'
+                '  subgraph cluster_metrics { label="FINANCIAL KG BRIDGE"; labelloc="t"; labeljust="l"; fontsize=9; fontcolor="#64748B"; color="#DCFCE7"; style="rounded"; bgcolor="#FBFEFC";'
             )
-            lines.append(
-                f'  "skill:{_escape(focus_skill)}" -> "{_escape(metric_id)}" '
-                '[label="REQUIRES_METRIC", color="#16a34a", fontcolor="#15803d"];'
-            )
+            for metric in skill.required_metrics:
+                metric_id = f"metric:{metric}"
+                lines.append(
+                    f'    "{_escape(metric_id)}" [label="{_escape(metric)}\nMetric", '
+                    'shape=box, fillcolor="#F0FDF4", color="#16A34A"];'
+                )
+            lines.append("  }")
+            for metric in skill.required_metrics:
+                metric_id = f"metric:{metric}"
+                lines.append(
+                    f'  "skill:{_escape(focus_skill)}" -> "{_escape(metric_id)}" '
+                    '[label="REQUIRES_METRIC", color="#16A34A", fontcolor="#15803D", style=dashed];'
+                )
 
     lines.append("}")
     return "\n".join(lines)
@@ -125,30 +166,59 @@ def skill_detail_dot(registry: SkillRegistry, skill_id: str) -> str:
     skill = registry.skills[skill_id]
     lines = [
         "digraph SkillDetail {",
-        '  graph [rankdir=LR, bgcolor="transparent", pad="0.25", nodesep="0.3", ranksep="0.7"];',
-        '  node [fontname="Arial", fontsize=10, shape=box, style="rounded,filled", color="#64748b", fillcolor="#f8fafc", fontcolor="#0f172a"];',
-        '  edge [fontname="Arial", fontsize=9, color="#94a3b8", fontcolor="#475569", arrowsize=0.7];',
-        f'  skill [label="{_escape(skill.name)}\\n{_escape(skill.skill_id)}", fillcolor="#dbeafe", color="#2563eb", penwidth=1.5];',
+        '  graph [rankdir=LR, bgcolor="transparent", pad="0.35", nodesep="0.32", ranksep="0.9", splines=polyline, newrank=true];',
+        '  node [fontname="Arial", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.10", color="#CBD5E1", fillcolor="#FFFFFF", fontcolor="#0F172A", penwidth=1.2];',
+        '  edge [fontname="Arial", fontsize=8.5, color="#94A3B8", fontcolor="#64748B", arrowsize=0.65, penwidth=1.1];',
+        '  subgraph cluster_input { label="INPUT / DEPENDENCY"; labelloc="t"; labeljust="l"; fontsize=9; fontcolor="#64748B"; color="#E2E8F0"; style="rounded"; bgcolor="#FCFCFD";',
     ]
 
-    groups = [
-        ("requires", skill.requires, "REQUIRES", "#fef2f2", "#dc2626"),
-        ("consumes", skill.consumes, "CONSUMES", "#f8fafc", "#64748b"),
-        ("produces", skill.produces, "PRODUCES", "#ecfdf5", "#059669"),
-        ("tools", skill.tools, "USES_TOOL", "#fff7ed", "#ea580c"),
-        ("validation", skill.validation, "VALIDATED_BY", "#faf5ff", "#9333ea"),
-        ("metrics", skill.required_metrics, "REQUIRES_METRIC", "#f0fdf4", "#16a34a"),
+    left_groups = [
+        ("requires", skill.requires, "REQUIRES", "#FEF2F2", "#DC2626"),
+        ("consumes", skill.consumes, "CONSUMES", "#F8FAFC", "#64748B"),
+        ("metrics", skill.required_metrics, "REQUIRES_METRIC", "#F0FDF4", "#16A34A"),
+    ]
+    right_groups = [
+        ("produces", skill.produces, "PRODUCES", "#ECFDF5", "#059669"),
+        ("tools", skill.tools, "USES_TOOL", "#FFF7ED", "#EA580C"),
+        ("validation", skill.validation, "VALIDATED_BY", "#F5F3FF", "#7C3AED"),
     ]
 
-    for group_name, values, relation, fill, color in groups:
+    left_nodes = []
+    right_nodes = []
+
+    for group_name, values, relation, fill, color in left_groups:
         for idx, value in enumerate(values):
             node_id = f"{group_name}_{idx}"
+            left_nodes.append((node_id, relation, color))
             lines.append(
-                f'  {node_id} [label="{_escape(value)}", fillcolor="{fill}", color="{color}"];'
+                f'    {node_id} [label="{_escape(value)}", fillcolor="{fill}", color="{color}"];'
             )
+    lines.append("  }")
+
+    lines.extend(
+        [
+            f'  skill [label="{_escape(skill.name)}\n{_escape(skill.skill_id)}", fillcolor="#EFF6FF", color="#2563EB", penwidth=1.7];',
+            '  subgraph cluster_output { label="OUTPUT / RULE"; labelloc="t"; labeljust="l"; fontsize=9; fontcolor="#64748B"; color="#E2E8F0"; style="rounded"; bgcolor="#FCFCFD";',
+        ]
+    )
+
+    for group_name, values, relation, fill, color in right_groups:
+        for idx, value in enumerate(values):
+            node_id = f"{group_name}_{idx}"
+            right_nodes.append((node_id, relation, color))
             lines.append(
-                f'  skill -> {node_id} [label="{relation}", color="{color}", fontcolor="{color}"];'
+                f'    {node_id} [label="{_escape(value)}", fillcolor="{fill}", color="{color}"];'
             )
+    lines.append("  }")
+
+    for node_id, relation, color in left_nodes:
+        lines.append(
+            f'  skill -> {node_id} [label="{relation}", color="{color}", fontcolor="{color}"];'
+        )
+    for node_id, relation, color in right_nodes:
+        lines.append(
+            f'  skill -> {node_id} [label="{relation}", color="{color}", fontcolor="{color}"];'
+        )
 
     lines.append("}")
     return "\n".join(lines)
