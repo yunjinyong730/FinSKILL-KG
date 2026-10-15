@@ -6,6 +6,7 @@ on:
       - main
       - align-proposal-evaluation
       - visualize-demo-site
+      - polish-readme-visuals
     paths:
       - app.py
       - src/**

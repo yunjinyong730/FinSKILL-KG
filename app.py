@@ -117,6 +117,26 @@ def render_chat_result(item: dict, registry: SkillRegistry) -> None:
 
 
 st.set_page_config(page_title="FinSKILL-KG", page_icon="📊", layout="wide")
+st.markdown(
+    """
+    <style>
+    .block-container { padding-top: 2rem; padding-bottom: 3rem; }
+    div[data-testid="stMetric"] {
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: #FFFFFF;
+    }
+    div[data-testid="stGraphVizChart"] {
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 12px;
+        background: #FFFFFF;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 st.title("FinSKILL-KG")
 st.caption(
     "Financial KG + Skill KG 기반 근거 추적형 재무분석 데모와 3-system benchmark"
@@ -366,20 +386,19 @@ with skill_explorer_tab:
         key="skill_explorer_select",
     )
     selected_skill = registry.skills[selected_skill_id]
+    st.caption(selected_skill.description)
 
-    st.graphviz_chart(
-        skill_detail_dot(registry, selected_skill_id),
-        use_container_width=True,
-    )
+    graph_col, metadata_col = st.columns([1.35, 1])
+    with graph_col:
+        st.graphviz_chart(
+            skill_detail_dot(registry, selected_skill_id),
+            use_container_width=True,
+        )
 
-    metadata_col, instruction_col = st.columns([1, 1.35])
     with metadata_col:
         st.markdown("#### Metadata")
         st.json(
             {
-                "skill_id": selected_skill.skill_id,
-                "name": selected_skill.name,
-                "description": selected_skill.description,
                 "requires": list(selected_skill.requires),
                 "consumes": list(selected_skill.consumes),
                 "produces": list(selected_skill.produces),
@@ -389,9 +408,9 @@ with skill_explorer_tab:
             }
         )
 
-    with instruction_col:
-        st.markdown("#### SKILL.md")
-        st.markdown(selected_skill.body)
+    st.markdown("#### SKILL.md")
+    st.markdown(selected_skill.body)
+
 
 with evaluation_tab:
     st.subheader("LLM Only vs Financial KG vs Skill KG + Financial KG")
