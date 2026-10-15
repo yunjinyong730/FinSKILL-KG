@@ -117,7 +117,27 @@ def render_chat_result(item: dict, registry: SkillRegistry) -> None:
 
 
 st.set_page_config(page_title="FinSKILL-KG", page_icon="📊", layout="wide")
-st.markdown(\n    """\n    <style>\n    .block-container { padding-top: 2rem; padding-bottom: 3rem; }\n    div[data-testid="stMetric"] {\n        border: 1px solid #E2E8F0;\n        border-radius: 12px;\n        padding: 12px 14px;\n        background: #FFFFFF;\n    }\n    div[data-testid="stGraphVizChart"] {\n        border: 1px solid #E2E8F0;\n        border-radius: 14px;\n        padding: 12px;\n        background: #FFFFFF;\n    }\n    </style>\n    """,\n    unsafe_allow_html=True,\n)\nst.title("FinSKILL-KG")
+st.markdown(
+    """
+    <style>
+    .block-container { padding-top: 2rem; padding-bottom: 3rem; }
+    div[data-testid="stMetric"] {
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: #FFFFFF;
+    }
+    div[data-testid="stGraphVizChart"] {
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 12px;
+        background: #FFFFFF;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+st.title("FinSKILL-KG")
 st.caption(
     "Financial KG + Skill KG 기반 근거 추적형 재무분석 데모와 3-system benchmark"
 )
