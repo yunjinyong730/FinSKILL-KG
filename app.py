@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import os
 from pathlib import Path
 
@@ -20,6 +21,10 @@ from src.finskillkg.visualize import (
 )
 
 
+APP_TITLE = "FinSKILL-KG"
+APP_SUBTITLE = "Financial Knowledge Graph × Skill Orchestration"
+
+
 def _setting(name: str, default: str = "") -> str:
     value = os.getenv(name, "").strip()
     if value:
@@ -34,8 +39,11 @@ def default_data_path() -> Path:
     configured = _setting("FINSKILL_DATA")
     if configured:
         return Path(configured)
+
     dart_path = Path("data/dart_financials.csv")
-    return dart_path if dart_path.exists() else Path("data/sample_financials.csv")
+    if dart_path.exists():
+        return dart_path
+    return Path("data/sample_financials.csv")
 
 
 def build_llm_client() -> LLMClient | None:
@@ -72,21 +80,122 @@ def analyze_query(
     }
 
 
+def escape_text(value: object) -> str:
+    return html.escape(str(value), quote=True)
+
+
+def render_page_header(
+    eyebrow: str,
+    title: str,
+    description: str,
+    badge: str | None = None,
+) -> None:
+    badge_html = (
+        f'<span class="page-badge">{escape_text(badge)}</span>'
+        if badge
+        else ""
+    )
+    st.markdown(
+        f"""
+        <div class="page-heading">
+            <div class="page-heading-top">
+                <div>
+                    <div class="eyebrow">{escape_text(eyebrow)}</div>
+                    <h1>{escape_text(title)}</h1>
+                </div>
+                {badge_html}
+            </div>
+            <p>{escape_text(description)}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_stat_card(label: str, value: object, helper: str = "") -> None:
+    helper_html = (
+        f'<div class="stat-helper">{escape_text(helper)}</div>'
+        if helper
+        else ""
+    )
+    st.markdown(
+        f"""
+        <div class="stat-card">
+            <div class="stat-label">{escape_text(label)}</div>
+            <div class="stat-value">{escape_text(value)}</div>
+            {helper_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_architecture_card(
+    number: str,
+    title: str,
+    description: str,
+    accent: str,
+) -> None:
+    st.markdown(
+        f"""
+        <div class="arch-card">
+            <div class="arch-step" style="color:{accent};">{escape_text(number)}</div>
+            <div class="arch-title">{escape_text(title)}</div>
+            <div class="arch-desc">{escape_text(description)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_evidence(evidence: list[dict]) -> None:
     if not evidence:
         st.caption("표시할 근거가 없습니다.")
         return
 
-    view = pd.DataFrame(evidence)
-    st.dataframe(view, hide_index=True, use_container_width=True)
-
     for item in evidence:
-        url = str(item.get("source_url", "")).strip()
-        if url:
-            st.markdown(
-                f"- [{item.get('source_name', 'DART source')} "
-                f"({item.get('source_id', '')})]({url})"
-            )
+        source_id = escape_text(item.get("source_id", ""))
+        source_name = escape_text(item.get("source_name", "DART source"))
+        source_url = str(item.get("source_url", "")).strip()
+        link = (
+            f'<a href="{escape_text(source_url)}" target="_blank">원문 보기</a>'
+            if source_url
+            else ""
+        )
+        st.markdown(
+            f"""
+            <div class="evidence-row">
+                <div>
+                    <div class="evidence-name">{source_name}</div>
+                    <div class="evidence-id">{source_id}</div>
+                </div>
+                <div>{link}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+def render_skill_trace(result: dict, registry: SkillRegistry) -> None:
+    plan = result.get("skill_plan", [])
+    if not plan:
+        st.caption("실행된 SKILL이 없습니다.")
+        return
+
+    for idx, skill_id in enumerate(plan, 1):
+        skill = registry.skills[skill_id]
+        st.markdown(
+            f"""
+            <div class="trace-row">
+                <div class="trace-index">{idx:02d}</div>
+                <div>
+                    <div class="trace-title">{escape_text(skill.name)}</div>
+                    <div class="trace-id">{escape_text(skill_id)}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 def render_chat_result(item: dict, registry: SkillRegistry) -> None:
@@ -96,50 +205,465 @@ def render_chat_result(item: dict, registry: SkillRegistry) -> None:
         st.write(item["query"])
 
     with st.chat_message("assistant"):
-        st.text(item["answer"])
+        st.markdown(
+            f"""
+            <div class="answer-card">
+                <div class="answer-kicker">ANALYSIS RESULT</div>
+                <div class="answer-body">{escape_text(item["answer"]).replace(chr(10), "<br>")}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
         if item["llm_error"]:
             st.caption(
                 "LLM 문장 생성에 실패해 deterministic 결과를 표시했습니다: "
                 f"{item['llm_error']}"
             )
 
-        with st.expander("이 답변이 만들어진 과정"):
-            left, right = st.columns(2)
+        with st.expander("분석 과정과 근거 보기", expanded=False):
+            left, right = st.columns([1, 1])
             with left:
-                st.markdown("**실행된 SKILL**")
-                for idx, skill_id in enumerate(result["skill_plan"], 1):
-                    skill = registry.skills[skill_id]
-                    st.write(f"{idx}. {skill_id}")
-                    st.caption(skill.description)
+                st.markdown("##### 실행 SKILL")
+                render_skill_trace(result, registry)
             with right:
-                st.markdown("**Evidence**")
+                st.markdown("##### Evidence")
                 render_evidence(result["evidence"])
 
 
-st.set_page_config(page_title="FinSKILL-KG", page_icon="📊", layout="wide")
+st.set_page_config(
+    page_title=APP_TITLE,
+    page_icon="◼",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 st.markdown(
     """
     <style>
-    .block-container { padding-top: 2rem; padding-bottom: 3rem; }
-    div[data-testid="stMetric"] {
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 12px 14px;
-        background: #FFFFFF;
+    :root {
+        --ink: #111827;
+        --muted: #667085;
+        --line: #E4E7EC;
+        --panel: #FFFFFF;
+        --panel-soft: #F8FAFC;
+        --navy: #0B1F3A;
+        --blue: #2563EB;
+        --blue-soft: #EFF6FF;
+        --green: #0E9384;
+        --green-soft: #ECFDF3;
+        --amber: #B54708;
+        --amber-soft: #FFFAEB;
     }
-    div[data-testid="stGraphVizChart"] {
-        border: 1px solid #E2E8F0;
+
+    html, body, [class*="css"] {
+        font-family: Inter, Pretendard, "Noto Sans KR", -apple-system,
+            BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    [data-testid="stAppViewContainer"] {
+        background: #F5F7FA;
+    }
+
+    [data-testid="stHeader"] {
+        background: rgba(245, 247, 250, 0.82);
+        backdrop-filter: blur(8px);
+    }
+
+    [data-testid="stSidebar"] {
+        background: #0B1F3A;
+        border-right: 0;
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #E6ECF5;
+    }
+
+    [data-testid="stSidebar"] .stRadio label {
+        padding: 0.45rem 0.6rem;
+        border-radius: 8px;
+    }
+
+    [data-testid="stSidebar"] .stRadio label:hover {
+        background: rgba(255,255,255,0.08);
+    }
+
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.10);
+    }
+
+    .block-container {
+        max-width: 1500px;
+        padding-top: 2.2rem;
+        padding-bottom: 4rem;
+    }
+
+    .brand {
+        padding: 0.4rem 0 1.25rem 0;
+    }
+
+    .brand-mark {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: linear-gradient(135deg, #4F8CF7, #18A0AE);
+        color: #fff;
+        font-weight: 800;
+        margin-bottom: 0.8rem;
+    }
+
+    .brand-name {
+        font-size: 1.12rem;
+        font-weight: 760;
+        letter-spacing: -0.02em;
+        color: #fff;
+    }
+
+    .brand-sub {
+        font-size: 0.76rem;
+        color: #AFC0D6;
+        margin-top: 0.25rem;
+        line-height: 1.5;
+    }
+
+    .side-section {
+        font-size: 0.69rem;
+        font-weight: 700;
+        color: #8498B3;
+        letter-spacing: 0.08em;
+        margin: 1.2rem 0 0.4rem;
+    }
+
+    .side-status {
+        margin-top: 1.25rem;
+        padding: 0.9rem;
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.04);
+    }
+
+    .status-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-size: 0.76rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .status-line:last-child {
+        margin-bottom: 0;
+    }
+
+    .status-key {
+        color: #93A4BA;
+    }
+
+    .status-value {
+        color: #F3F6FA;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .page-heading {
+        margin-bottom: 1.5rem;
+    }
+
+    .page-heading-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .eyebrow {
+        color: #4F6B8A;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        margin-bottom: 0.35rem;
+    }
+
+    .page-heading h1 {
+        margin: 0;
+        color: var(--navy);
+        font-size: 2.05rem;
+        line-height: 1.16;
+        letter-spacing: -0.035em;
+    }
+
+    .page-heading p {
+        margin: 0.65rem 0 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.65;
+        max-width: 840px;
+    }
+
+    .page-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 0 0.75rem;
+        border-radius: 999px;
+        background: #EEF4FF;
+        color: #3056D3;
+        font-size: 0.74rem;
+        font-weight: 700;
+        white-space: nowrap;
+        border: 1px solid #D6E4FF;
+    }
+
+    .hero {
+        padding: 2rem 2.1rem;
+        border-radius: 18px;
+        background:
+            radial-gradient(circle at 92% 18%, rgba(91, 153, 255, 0.18), transparent 26%),
+            linear-gradient(135deg, #0B1F3A 0%, #102D52 100%);
+        color: #fff;
+        margin-bottom: 1rem;
+        box-shadow: 0 14px 30px rgba(11,31,58,0.12);
+    }
+
+    .hero-kicker {
+        font-size: 0.73rem;
+        font-weight: 800;
+        color: #8FB8FF;
+        letter-spacing: 0.12em;
+    }
+
+    .hero-title {
+        margin: 0.55rem 0 0.7rem 0;
+        font-size: 2rem;
+        line-height: 1.25;
+        font-weight: 760;
+        letter-spacing: -0.035em;
+    }
+
+    .hero-desc {
+        max-width: 850px;
+        color: #CED9E8;
+        line-height: 1.65;
+        font-size: 0.94rem;
+    }
+
+    .stat-card {
+        background: #fff;
+        border: 1px solid var(--line);
         border-radius: 14px;
-        padding: 12px;
+        padding: 1rem 1.05rem;
+        min-height: 106px;
+        box-shadow: 0 2px 6px rgba(16,24,40,0.03);
+    }
+
+    .stat-label {
+        color: #667085;
+        font-size: 0.76rem;
+        font-weight: 650;
+    }
+
+    .stat-value {
+        color: #101828;
+        font-size: 1.75rem;
+        font-weight: 760;
+        margin-top: 0.2rem;
+        letter-spacing: -0.03em;
+    }
+
+    .stat-helper {
+        color: #98A2B3;
+        font-size: 0.7rem;
+        margin-top: 0.25rem;
+    }
+
+    .section-title {
+        color: #101828;
+        font-size: 1rem;
+        font-weight: 760;
+        margin: 1.4rem 0 0.7rem 0;
+    }
+
+    .panel {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 1.15rem 1.2rem;
+        box-shadow: 0 2px 7px rgba(16,24,40,0.03);
+    }
+
+    .arch-card {
+        min-height: 154px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 1rem;
+        box-shadow: 0 2px 6px rgba(16,24,40,0.03);
+    }
+
+    .arch-step {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+    }
+
+    .arch-title {
+        margin-top: 0.7rem;
+        color: #101828;
+        font-size: 0.98rem;
+        font-weight: 740;
+    }
+
+    .arch-desc {
+        margin-top: 0.4rem;
+        color: #667085;
+        font-size: 0.78rem;
+        line-height: 1.55;
+    }
+
+    .answer-card {
         background: #FFFFFF;
+        border: 1px solid #DDE3EA;
+        border-left: 3px solid #2563EB;
+        border-radius: 12px;
+        padding: 1rem 1.05rem;
+    }
+
+    .answer-kicker {
+        color: #315FBA;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.45rem;
+    }
+
+    .answer-body {
+        color: #1D2939;
+        line-height: 1.75;
+        font-size: 0.93rem;
+    }
+
+    .trace-row {
+        display: flex;
+        gap: 0.7rem;
+        align-items: flex-start;
+        padding: 0.62rem 0;
+        border-bottom: 1px solid #EEF1F4;
+    }
+
+    .trace-row:last-child {
+        border-bottom: 0;
+    }
+
+    .trace-index {
+        min-width: 29px;
+        height: 29px;
+        border-radius: 8px;
+        background: #EFF4FF;
+        color: #315FBA;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.68rem;
+        font-weight: 800;
+    }
+
+    .trace-title {
+        color: #1D2939;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .trace-id {
+        color: #98A2B3;
+        font-size: 0.68rem;
+        margin-top: 0.12rem;
+    }
+
+    .evidence-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.72rem 0;
+        border-bottom: 1px solid #EEF1F4;
+    }
+
+    .evidence-row:last-child {
+        border-bottom: 0;
+    }
+
+    .evidence-name {
+        color: #344054;
+        font-size: 0.78rem;
+        font-weight: 650;
+    }
+
+    .evidence-id {
+        color: #98A2B3;
+        font-size: 0.68rem;
+        margin-top: 0.12rem;
+    }
+
+    .evidence-row a {
+        color: #2563EB;
+        font-size: 0.74rem;
+        font-weight: 650;
+        text-decoration: none;
+    }
+
+    [data-testid="stGraphVizChart"] {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 2px 7px rgba(16,24,40,0.03);
+    }
+
+    [data-testid="stDataFrame"] {
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+    }
+
+    [data-testid="stExpander"] {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    div[data-testid="stChatMessage"] {
+        background: transparent;
+    }
+
+    .stButton > button,
+    .stFormSubmitButton > button {
+        border-radius: 9px;
+        font-weight: 700;
+    }
+
+    .footer-note {
+        margin-top: 2.5rem;
+        color: #98A2B3;
+        font-size: 0.72rem;
+        text-align: right;
+    }
+
+    @media (max-width: 900px) {
+        .hero {
+            padding: 1.5rem;
+        }
+        .hero-title {
+            font-size: 1.55rem;
+        }
+        .page-heading h1 {
+            font-size: 1.65rem;
+        }
     }
     </style>
     """,
     unsafe_allow_html=True,
-)
-st.title("FinSKILL-KG")
-st.caption(
-    "Financial KG + Skill KG 기반 근거 추적형 재무분석 데모와 3-system benchmark"
 )
 
 data_path = default_data_path()
@@ -159,142 +683,195 @@ summary = graph.summary()
 loaded_companies = set(graph.company_names())
 companies = graph.company_names()
 is_sample = data_path.name == "sample_financials.csv"
+data_label = "Sample Data" if is_sample else "OpenDART"
+llm_label = "Connected" if llm_client is not None else "Offline"
 
-c1, c2, c3, c4, c5 = st.columns(5)
-c1.metric("현재 데이터 기업", summary["companies"])
-c2.metric("Financial Fact", summary["facts"])
-c3.metric("SKILL", summary["skills"])
-c4.metric("DART Cohort", len(cohort.companies))
-c5.metric("Evaluation Task", len(evaluation_tasks))
-
-if is_sample:
-    st.warning(
-        "현재 데모는 실행 확인용 sample data를 사용 중입니다. "
-        "data/dart_financials.csv를 생성하면 같은 UI가 실제 OpenDART 데이터로 전환됩니다."
+with st.sidebar:
+    st.markdown(
+        """
+        <div class="brand">
+            <div class="brand-mark">F</div>
+            <div class="brand-name">FinSKILL-KG</div>
+            <div class="brand-sub">Grounded financial analysis with dual knowledge graphs</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-else:
-    st.success(f"OpenDART 데이터 사용 중: {data_path}")
+    st.markdown('<div class="side-section">WORKSPACE</div>', unsafe_allow_html=True)
+    page = st.radio(
+        "Navigation",
+        [
+            "Overview",
+            "Ask",
+            "Knowledge Graph",
+            "SKILL Explorer",
+            "Evaluation",
+            "Dataset",
+        ],
+        label_visibility="collapsed",
+    )
 
-(
-    overview_tab,
-    chat_tab,
-    kg_tab,
-    skill_explorer_tab,
-    evaluation_tab,
-    cohort_tab,
-) = st.tabs(
-    [
-        "Overview",
-        "Chat Demo",
-        "Knowledge Graph",
-        "SKILL Explorer",
-        "Evaluation",
-        "DART Cohort",
+    st.markdown('<div class="side-section">ENVIRONMENT</div>', unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="side-status">
+            <div class="status-line">
+                <span class="status-key">Data</span>
+                <span class="status-value">{escape_text(data_label)}</span>
+            </div>
+            <div class="status-line">
+                <span class="status-key">LLM</span>
+                <span class="status-value">{escape_text(llm_label)}</span>
+            </div>
+            <div class="status-line">
+                <span class="status-key">Companies</span>
+                <span class="status-value">{summary["companies"]}</span>
+            </div>
+            <div class="status-line">
+                <span class="status-key">SKILLs</span>
+                <span class="status-value">{summary["skills"]}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+if page == "Overview":
+    render_page_header(
+        "PROJECT OVERVIEW",
+        "재무 데이터를 근거로 분석하는 Dual KG 시스템",
+        "Financial KG는 재무 수치와 출처를 관리하고, Skill KG는 질문에 필요한 분석 순서를 관리합니다.",
+        badge=data_label,
+    )
+
+    st.markdown(
+        """
+        <div class="hero">
+            <div class="hero-kicker">FINANCIAL ANALYSIS COPILOT</div>
+            <div class="hero-title">숫자, 분석 절차, 근거를 분리해서 관리합니다.</div>
+            <div class="hero-desc">
+                OpenDART 재무정보를 Financial KG로 구조화하고, 재무비율 계산과 추세 분석,
+                기업 비교 같은 업무는 SKILL 단위로 나눴습니다. 질문이 들어오면 필요한 SKILL을
+                선택하고, KG에서 확인된 수치만 사용해 결과를 만듭니다.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    stat_cols = st.columns(5)
+    stats = [
+        ("Loaded Companies", summary["companies"], "현재 분석 가능한 기업"),
+        ("Financial Facts", summary["facts"], "KG에 적재된 재무 수치"),
+        ("SKILLs", summary["skills"], "재사용 가능한 분석 단위"),
+        ("DART Cohort", len(cohort.companies), "실험 대상 기업"),
+        ("Eval Tasks", len(evaluation_tasks), "비교 평가 질문"),
     ]
-)
+    for col, (label, value, helper) in zip(stat_cols, stats):
+        with col:
+            render_stat_card(label, value, helper)
 
-with overview_tab:
-    left, right = st.columns([1.15, 1])
-    with left:
-        st.subheader("System Flow")
-        st.code(
-            "User Question\n"
-            "   ↓\n"
-            "Skill Router\n"
-            "   ↓\n"
-            "Skill KG → SKILL.md\n"
-            "   ↓           ↘\n"
-            "Financial KG ← REQUIRES_METRIC\n"
-            "   ↓\n"
-            "Python Metric / Trend / Risk\n"
-            "   ↓\n"
-            "Evidence-based Answer\n"
-            "   ↓\n"
-            "Optional LLM Rendering",
-            language="text",
-        )
-        st.write(
-            "Financial KG는 **무엇을 알고 있는지**, Skill KG는 **어떤 업무를 "
-            "어떤 순서로 수행하는지**를 관리합니다. 실제 계산 가능한 수치는 "
-            "LLM 대신 Python에서 처리합니다."
-        )
+    st.markdown('<div class="section-title">How it works</div>', unsafe_allow_html=True)
+    flow_cols = st.columns(4)
+    flow = [
+        ("01", "Route", "질문에서 기업, 연도, 지표와 분석 유형을 확인합니다.", "#2563EB"),
+        ("02", "Plan", "Skill KG에서 필요한 SKILL과 선행 dependency를 정합니다.", "#7F56D9"),
+        ("03", "Retrieve", "Financial KG에서 필요한 재무 수치와 출처를 가져옵니다.", "#0E9384"),
+        ("04", "Compute", "정해진 재무 공식은 Python으로 계산하고 근거와 함께 반환합니다.", "#B54708"),
+    ]
+    for col, item in zip(flow_cols, flow):
+        with col:
+            render_architecture_card(*item)
 
-    with right:
-        st.subheader("Evaluation Design")
-        st.dataframe(
-            pd.DataFrame(
-                [
-                    {
-                        "system": "LLM Only",
-                        "Financial KG": "X",
-                        "Skill KG": "X",
-                        "calculation": "LLM",
-                    },
-                    {
-                        "system": "LLM + Financial KG",
-                        "Financial KG": "O",
-                        "Skill KG": "X",
-                        "calculation": "LLM",
-                    },
-                    {
-                        "system": "LLM + Skill KG + Financial KG",
-                        "Financial KG": "O",
-                        "Skill KG": "O",
-                        "calculation": "Python",
-                    },
-                ]
-            ),
-            hide_index=True,
-            use_container_width=True,
-        )
-        st.caption(
-            "동일 질문에 대해 numerical accuracy, evidence F1, skill accuracy, "
-            "unsupported rate, latency를 비교합니다."
-        )
+    st.markdown('<div class="section-title">Evaluation setup</div>', unsafe_allow_html=True)
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {
+                    "System": "LLM Only",
+                    "Financial KG": "No",
+                    "Skill KG": "No",
+                    "Calculation": "LLM",
+                },
+                {
+                    "System": "LLM + Financial KG",
+                    "Financial KG": "Yes",
+                    "Skill KG": "No",
+                    "Calculation": "LLM",
+                },
+                {
+                    "System": "LLM + Skill KG + Financial KG",
+                    "Financial KG": "Yes",
+                    "Skill KG": "Yes",
+                    "Calculation": "Python",
+                },
+            ]
+        ),
+        hide_index=True,
+        use_container_width=True,
+    )
 
-    st.subheader("Current Dual KG")
-    st.json(summary)
+elif page == "Ask":
+    render_page_header(
+        "INTERACTIVE DEMO",
+        "재무 질문하기",
+        "질문을 입력하면 선택된 SKILL, 계산 결과, 사용한 근거를 한 화면에서 확인할 수 있습니다.",
+        badge="LLM optional",
+    )
 
-with chat_tab:
-    st.subheader("Financial KG + SKILL 기반 질문 데모")
     first_company = companies[0]
     second_company = companies[1] if len(companies) > 1 else companies[0]
-    examples = [
-        f"{first_company} 최근 3년 재무상태 분석해줘",
-        f"{first_company} 부채비율 알려줘",
-        f"{first_company} 영업이익률 변화 알려줘",
-        f"{first_company}와 {second_company} 비교해줘",
-    ]
-    st.caption("예시: " + " / ".join(examples))
 
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-
-    option_left, option_right = st.columns([3, 1])
-    with option_right:
-        use_llm = st.checkbox(
+    preset_col, option_col = st.columns([3, 1])
+    with preset_col:
+        st.markdown(
+            """
+            <div class="panel">
+                <div class="section-title" style="margin-top:0;">Example questions</div>
+                <div style="color:#667085;font-size:0.82rem;line-height:1.9;">
+                    재무상태 요약 / 부채비율 계산 / 영업이익률 추세 / 기업 비교
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with option_col:
+        use_llm = st.toggle(
             "LLM 문장화",
             value=False,
             disabled=llm_client is None,
-            help="계산 결과와 evidence는 그대로 두고 최종 문장만 LLM이 정리합니다.",
+            help="계산 결과와 evidence는 유지하고 최종 문장만 LLM이 정리합니다.",
         )
-    with option_left:
-        if llm_client is None:
-            st.caption(
-                "LLM 설정이 없어도 KG 조회, 재무 계산, SKILL routing은 모두 동작합니다."
-            )
-        else:
-            st.caption("LLM 연결됨. 필요할 때만 최종 문장화를 켤 수 있습니다.")
+
+    examples = [
+        f"{first_company} 최근 3년 재무상태 분석해줘",
+        f"{first_company} 2025년 부채비율 알려줘",
+        f"{first_company} 영업이익률 변화 알려줘",
+        f"{first_company}와 {second_company} ROE 비교해줘",
+    ]
+
+    selected_example = st.selectbox(
+        "예시 질문",
+        ["직접 입력"] + examples,
+        index=0,
+    )
+
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
 
     for history_item in st.session_state.chat_history:
         render_chat_result(history_item, registry)
 
     with st.form("question_form", clear_on_submit=True):
+        default_query = "" if selected_example == "직접 입력" else selected_example
         query = st.text_input(
-            "질문 입력",
-            placeholder=f"예: {examples[0]}",
+            "질문",
+            value=default_query,
+            placeholder="예: 삼성전자 2025년 부채비율 알려줘",
+            label_visibility="collapsed",
         )
-        submitted = st.form_submit_button("질문하기", type="primary")
+        submitted = st.form_submit_button("분석 실행", type="primary")
 
     if submitted:
         query = query.strip()
@@ -305,60 +882,60 @@ with chat_tab:
             st.session_state.chat_history.append(item)
             st.rerun()
 
-    if st.session_state.chat_history and st.button("대화 초기화"):
-        st.session_state.chat_history = []
-        st.rerun()
+    if st.session_state.chat_history:
+        if st.button("대화 초기화"):
+            st.session_state.chat_history = []
+            st.rerun()
 
-with kg_tab:
-    financial_tab, skill_tab = st.tabs(["Financial KG", "Skill KG"])
+elif page == "Knowledge Graph":
+    render_page_header(
+        "GRAPH EXPLORER",
+        "Knowledge Graph",
+        "Financial KG와 Skill KG를 분리해서 보고, 두 그래프가 어떤 지점에서 연결되는지 확인합니다.",
+    )
 
-    with financial_tab:
-        st.subheader("Financial KG Sample")
-        selected_company = st.selectbox(
-            "기업",
-            companies,
-            key="financial_graph_company",
-        )
+    graph_view = st.radio(
+        "Graph type",
+        ["Financial KG", "Skill KG"],
+        index=0,
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+    if graph_view == "Financial KG":
+        control_left, control_right = st.columns(2)
+        with control_left:
+            selected_company = st.selectbox("기업", companies)
         company_frame = graph.facts(selected_company)
-        available_years = sorted(
-            int(value) for value in company_frame["year"].unique()
-        )
-        selected_year = st.selectbox(
-            "사업연도",
-            available_years,
-            index=len(available_years) - 1,
-            key="financial_graph_year",
-        )
+        available_years = sorted(int(value) for value in company_frame["year"].unique())
+        with control_right:
+            selected_year = st.selectbox(
+                "사업연도",
+                available_years,
+                index=len(available_years) - 1,
+            )
+
         st.graphviz_chart(
             financial_kg_dot(graph, selected_company, selected_year),
             use_container_width=True,
         )
-        st.caption(
-            "Company → FinancialFact → Metric/Period/Report 관계를 실제 로드된 "
-            "Financial Fact 기준으로 표시합니다."
-        )
 
         view = company_frame[company_frame["year"] == selected_year].copy()
         view["metric_name"] = view["metric"].map(METRIC_LABELS)
-        st.dataframe(
-            view[
-                [
-                    "company_name",
-                    "year",
-                    "metric_name",
-                    "value",
-                    "unit",
-                    "source_id",
-                ]
-            ],
-            hide_index=True,
-            use_container_width=True,
-        )
+        view = view[
+            [
+                "metric_name",
+                "metric",
+                "value",
+                "unit",
+                "source_id",
+            ]
+        ]
+        st.dataframe(view, hide_index=True, use_container_width=True)
 
-    with skill_tab:
-        st.subheader("Skill KG Sample")
+    else:
         skill_ids = sorted(registry.skills)
-        focus_index = (
+        default_index = (
             skill_ids.index("financial_summary_generation")
             if "financial_summary_generation" in skill_ids
             else 0
@@ -366,83 +943,117 @@ with kg_tab:
         focus_skill = st.selectbox(
             "중심 SKILL",
             skill_ids,
-            index=focus_index,
-            key="skill_graph_focus",
+            index=default_index,
         )
+        st.caption(registry.skills[focus_skill].description)
         st.graphviz_chart(
             skill_kg_dot(registry, focus_skill),
             use_container_width=True,
         )
-        st.caption(
-            "SKILL 간 REQUIRES dependency와 선택한 SKILL이 필요로 하는 "
-            "Financial KG Metric을 함께 표시합니다."
-        )
 
-with skill_explorer_tab:
-    st.subheader("SKILL Explorer")
+elif page == "SKILL Explorer":
+    render_page_header(
+        "SKILL LIBRARY",
+        "SKILL Explorer",
+        "각 SKILL의 dependency, input/output, validation 규칙과 실제 SKILL.md 내용을 함께 확인합니다.",
+    )
+
     selected_skill_id = st.selectbox(
         "SKILL",
         sorted(registry.skills),
-        key="skill_explorer_select",
     )
     selected_skill = registry.skills[selected_skill_id]
-    st.caption(selected_skill.description)
 
-    graph_col, metadata_col = st.columns([1.35, 1])
+    st.markdown(
+        f"""
+        <div class="panel">
+            <div class="eyebrow">SELECTED SKILL</div>
+            <div style="font-size:1.15rem;font-weight:760;color:#101828;">
+                {escape_text(selected_skill.name)}
+            </div>
+            <div style="margin-top:0.35rem;color:#667085;font-size:0.82rem;">
+                {escape_text(selected_skill.description)}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.write("")
+    graph_col, meta_col = st.columns([1.45, 1])
     with graph_col:
         st.graphviz_chart(
             skill_detail_dot(registry, selected_skill_id),
             use_container_width=True,
         )
-
-    with metadata_col:
-        st.markdown("#### Metadata")
-        st.json(
-            {
-                "requires": list(selected_skill.requires),
-                "consumes": list(selected_skill.consumes),
-                "produces": list(selected_skill.produces),
-                "tools": list(selected_skill.tools),
-                "validation": list(selected_skill.validation),
-                "required_metrics": list(selected_skill.required_metrics),
-            }
+    with meta_col:
+        metadata = pd.DataFrame(
+            [
+                ("Requires", ", ".join(selected_skill.requires) or "-"),
+                ("Consumes", ", ".join(selected_skill.consumes) or "-"),
+                ("Produces", ", ".join(selected_skill.produces) or "-"),
+                ("Tools", ", ".join(selected_skill.tools) or "-"),
+                ("Validation", ", ".join(selected_skill.validation) or "-"),
+                ("Metrics", ", ".join(selected_skill.required_metrics) or "-"),
+            ],
+            columns=["Field", "Value"],
         )
+        st.dataframe(metadata, hide_index=True, use_container_width=True)
 
-    st.markdown("#### SKILL.md")
-    st.markdown(selected_skill.body)
+    with st.expander("SKILL.md 원문 보기", expanded=True):
+        st.markdown(selected_skill.body)
 
-
-with evaluation_tab:
-    st.subheader("LLM Only vs Financial KG vs Skill KG + Financial KG")
-    st.write(
-        "36개 질문을 metric, trend, comparison 세 유형으로 나누고 "
-        "세 시스템에 동일하게 실행합니다."
+elif page == "Evaluation":
+    render_page_header(
+        "BENCHMARK",
+        "Evaluation",
+        "동일한 금융 질문을 세 시스템에 적용하고 수치 정확도, 근거, SKILL 선택 성능을 비교합니다.",
+        badge=f"{len(evaluation_tasks)} tasks",
     )
 
     task_frame = pd.DataFrame(
         [
             {
-                "task_id": task.task_id,
-                "type": task.task_type,
-                "companies": ", ".join(task.companies),
-                "metric": task.metric,
-                "target_skill": task.target_skill,
+                "Task ID": task.task_id,
+                "Type": task.task_type,
+                "Companies": ", ".join(task.companies),
+                "Metric": task.metric,
+                "Target SKILL": task.target_skill,
             }
             for task in evaluation_tasks
         ]
     )
-    type_counts = (
-        task_frame["type"]
+
+    count_frame = (
+        task_frame["Type"]
         .value_counts()
-        .rename_axis("type")
-        .reset_index(name="tasks")
+        .rename_axis("Type")
+        .reset_index(name="Tasks")
     )
-    st.dataframe(type_counts, hide_index=True, use_container_width=True)
+
+    top_left, top_right = st.columns([1, 2])
+    with top_left:
+        st.markdown('<div class="section-title">Task distribution</div>', unsafe_allow_html=True)
+        st.dataframe(count_frame, hide_index=True, use_container_width=True)
+    with top_right:
+        st.markdown('<div class="section-title">Evaluation metrics</div>', unsafe_allow_html=True)
+        metric_cols = st.columns(5)
+        metric_labels = [
+            ("Numeric", "Accuracy"),
+            ("Evidence", "F1"),
+            ("Skill", "Accuracy"),
+            ("Unsupported", "Rate"),
+            ("Latency", "ms"),
+        ]
+        for col, (label, value) in zip(metric_cols, metric_labels):
+            with col:
+                render_stat_card(label, value)
 
     result_path = Path("outputs/evaluation/summary.csv")
+    st.markdown('<div class="section-title">Latest benchmark</div>', unsafe_allow_html=True)
+
     if result_path.exists():
         benchmark = pd.read_csv(result_path)
-        st.markdown("#### Latest benchmark")
         st.dataframe(benchmark, hide_index=True, use_container_width=True)
         chart_frame = benchmark.set_index("system")[
             ["numeric_accuracy", "evidence_f1", "skill_accuracy"]
@@ -451,31 +1062,52 @@ with evaluation_tab:
     else:
         st.info(
             "아직 benchmark 결과가 없습니다. 실제 DART 데이터와 LLM 설정 후 "
-            "python scripts/run_evaluation.py를 실행하면 이 탭에 결과가 표시됩니다."
+            "python scripts/run_evaluation.py 를 실행하면 결과가 표시됩니다."
         )
 
-    with st.expander("평가 질문 보기"):
+    with st.expander("평가 질문 전체 보기"):
         st.dataframe(task_frame, hide_index=True, use_container_width=True)
 
-with cohort_tab:
-    st.subheader("15-company OpenDART Cohort")
+elif page == "Dataset":
+    render_page_header(
+        "DATASET",
+        "OpenDART Cohort",
+        "실험에 사용하는 15개 기업과 현재 로드된 데이터 상태를 확인합니다.",
+        badge="2023–2025",
+    )
+
     cohort_rows = []
     for company in cohort.companies:
         cohort_rows.append(
             {
-                "company": company.name,
-                "ticker": company.ticker,
-                "sector": company.sector,
-                "loaded": "yes" if company.name in loaded_companies else "-",
+                "Company": company.name,
+                "Ticker": company.ticker,
+                "Sector": company.sector,
+                "Loaded": "Loaded" if company.name in loaded_companies else "Not loaded",
             }
         )
-    st.dataframe(
-        pd.DataFrame(cohort_rows),
-        hide_index=True,
-        use_container_width=True,
-    )
-    st.caption(f"분석 연도: {', '.join(str(year) for year in cohort.years)}")
+    cohort_frame = pd.DataFrame(cohort_rows)
 
-st.caption(
-    "Risk Signal은 프로젝트용 단순 규칙이며 투자 판단이나 신용등급을 의미하지 않습니다."
+    loaded_count = int((cohort_frame["Loaded"] == "Loaded").sum())
+    dataset_cols = st.columns(4)
+    dataset_stats = [
+        ("Target Companies", len(cohort.companies), "고정 cohort"),
+        ("Loaded", loaded_count, data_label),
+        ("Years", "2023–2025", "사업보고서"),
+        ("Financial Facts", summary["facts"], "현재 KG 기준"),
+    ]
+    for col, item in zip(dataset_cols, dataset_stats):
+        with col:
+            render_stat_card(*item)
+
+    st.write("")
+    st.dataframe(cohort_frame, hide_index=True, use_container_width=True)
+
+st.markdown(
+    """
+    <div class="footer-note">
+        FinSKILL-KG demo · Risk Signal은 프로젝트용 규칙이며 투자 판단이나 신용등급을 의미하지 않습니다.
+    </div>
+    """,
+    unsafe_allow_html=True,
 )

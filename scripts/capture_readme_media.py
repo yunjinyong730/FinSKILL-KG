@@ -96,29 +96,29 @@ def main() -> None:
             page.goto(BASE_URL, wait_until="networkidle")
             page.screenshot(path=str(ASSET_DIR / "dashboard.png"))
 
-            page.get_by_role("tab", name="Chat Demo").click()
-            page.locator('input[aria-label="질문 입력"]').fill(
+            page.get_by_text("Ask", exact=True).click()
+            page.locator('input[aria-label="질문"]').fill(
                 "샘플전자 최근 3년 재무상태 분석해줘"
             )
-            page.get_by_role("button", name="질문하기").click()
+            page.get_by_role("button", name="분석 실행").click()
             page.get_by_text("Risk Signal", exact=False).wait_for(timeout=10000)
             page.screenshot(path=str(ASSET_DIR / "chat_demo.png"))
 
-            page.get_by_role("tab", name="Knowledge Graph").click()
-            page.get_by_text("Financial KG Sample", exact=True).wait_for(timeout=10000)
+            page.get_by_text("Knowledge Graph", exact=True).click()
+            page.get_by_role("heading", name="Knowledge Graph").wait_for(timeout=10000)
             page.wait_for_timeout(900)
             page.screenshot(path=str(ASSET_DIR / "kg_explorer.png"))
 
-            page.get_by_role("tab", name="SKILL Explorer").click()
+            page.get_by_text("SKILL Explorer", exact=True).click()
             page.get_by_role("heading", name="SKILL Explorer").wait_for(timeout=10000)
             page.wait_for_timeout(900)
             page.screenshot(path=str(ASSET_DIR / "skill_explorer.png"))
 
-            page.get_by_role("tab", name="Evaluation").click()
+            page.get_by_text("Evaluation", exact=True).click()
             page.wait_for_timeout(700)
             page.screenshot(path=str(ASSET_DIR / "evaluation.png"))
 
-            page.get_by_role("tab", name="DART Cohort").click()
+            page.get_by_text("Dataset", exact=True).click()
             page.wait_for_timeout(700)
             page.screenshot(path=str(ASSET_DIR / "cohort.png"))
 
