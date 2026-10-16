@@ -7,6 +7,15 @@ from .graph import DualKnowledgeGraph
 from .skills import SkillRegistry
 
 
+SKILL_TO_INTENT = {
+    "financial_metric_calculation": "metric",
+    "financial_trend_analysis": "trend",
+    "financial_risk_analysis": "risk",
+    "company_comparison": "comparison",
+    "financial_summary_generation": "summary",
+}
+
+
 METRIC_QUERY_MAP = [
     ("부채비율", "debt_ratio"),
     ("영업이익률", "operating_margin"),
@@ -63,13 +72,19 @@ def route_query(
     query: str,
     graph: DualKnowledgeGraph,
     registry: SkillRegistry,
+    target_skill: str | None = None,
 ) -> QueryRoute:
     text = query.lower()
     companies = _find_companies(query, graph)
     metric = _find_metric(query)
     years = _find_years(query)
 
-    if any(word in text for word in ["비교", "vs", "대비"]):
+    if target_skill is not None:
+        if target_skill not in SKILL_TO_INTENT:
+            raise ValueError(f"지원하지 않는 target skill입니다: {target_skill}")
+        skill = target_skill
+        intent = SKILL_TO_INTENT[skill]
+    elif any(word in text for word in ["비교", "vs", "대비"]):
         intent = "comparison"
         skill = "company_comparison"
     elif any(word in text for word in ["위험", "리스크", "건전", "안정", "악화"]):

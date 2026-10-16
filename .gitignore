@@ -6,3 +6,5 @@ __pycache__/
 outputs/*
 !outputs/.gitkeep
 .DS_Store
+
+edubridge/artifacts/

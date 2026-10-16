@@ -1,1 +1,5 @@
-# Python 3.11 standard library only
+pandas>=2.0,<3.0
+networkx>=3.2,<4.0
+PyYAML>=6.0
+scikit-learn>=1.5,<2.0
+joblib>=1.4

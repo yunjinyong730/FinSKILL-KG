@@ -5,3 +5,4 @@ requests>=2.31
 streamlit>=1.38
 neo4j>=5.20
 pytest>=8.0
+scikit-learn>=1.5,<2.0

@@ -390,23 +390,44 @@ python scripts/run_evaluation.py --systems llm_skill_financial_kg
 
 ---
 
-## EduBridge에서 실행
+## EduBridge에서 학습
 
-EduBridge에서는 별도 패키지 설치 없이 확인할 수 있는 실행 버전을 따로 뒀습니다.
+EduBridge에서는 Skill Router를 직접 학습하도록 별도 실행 파일을 뒀습니다.
 
-```bash
-python edubridge/main.py
-```
-
-이 버전은 Python 표준 라이브러리만 사용하고, sample data로 질문 처리, Financial KG, Skill KG, SKILL dependency를 확인할 수 있습니다.
-
-빠르게 결과만 보려면:
+설치:
 
 ```bash
-python edubridge/main.py --demo
+pip install -r edubridge/requirements.txt
 ```
 
-자세한 내용은 [edubridge/README.md](edubridge/README.md)에 정리했습니다.
+학습:
+
+```bash
+python edubridge/train.py --epochs 20
+```
+
+학습 결과는 `edubridge/artifacts/`에 저장됩니다.
+
+```text
+skill_router.joblib
+metrics.json
+history.csv
+confusion_matrix.csv
+dataset/
+```
+
+학습된 Router를 실제 KG 분석 흐름에 연결하려면:
+
+```bash
+python edubridge/inference.py \
+  --question "샘플전자 2025년 부채비율 알려줘"
+```
+
+Financial KG와 Skill KG 자체는 학습 대상이 아니라 데이터와 업무 구조를 표현하는 그래프입니다. EduBridge에서 학습하는 부분은 사용자 질문을 5개 target SKILL 중 하나로 분류하는 Router입니다.
+
+기존 `edubridge/main.py`는 외부 의존성 없이 흐름만 확인하는 보조 실행 파일로 남겨두었습니다.
+
+자세한 학습 방법은 [edubridge/README.md](edubridge/README.md)에 정리했습니다.
 
 ---
 
