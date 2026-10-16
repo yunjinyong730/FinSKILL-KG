@@ -120,6 +120,7 @@ TRAIN_TEMPLATES = {
         "{company} 부채비율과 수익성 기준으로 안정적인지 봐줘",
         "{company} 재무 건전성에 문제 없는지 확인해줘",
         "{company} 최근 실적 기준으로 위험 신호 확인해줘",
+        "{year}년 {company} 부채와 수익성 기준 위험 수준 알려줘",
     ],
     "company_comparison": [
         "{company}와 {company2} {metric} 비교해줘",
@@ -142,6 +143,7 @@ TRAIN_TEMPLATES = {
         "{company} 최근 재무 흐름을 전체적으로 설명해줘",
         "{company} 매출 수익성 부채 수준까지 한 번에 봐줘",
         "{company} 재무 상태를 종합적으로 정리해줘",
+        "{year}년 {company} 실적 재무비율 재무상태를 같이 정리해줘",
     ],
 }
 
