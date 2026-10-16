@@ -887,6 +887,407 @@ st.markdown(
         visibility: hidden;
     }
 
+
+    .cover-shell {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 1.05rem;
+    }
+
+    .cover-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.18fr) minmax(380px, 0.82fr);
+        min-height: 520px;
+    }
+
+    .cover-copy {
+        padding: 4.3rem 4.2rem 3.8rem 4.2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-right: 1px solid var(--line);
+    }
+
+    .cover-label {
+        color: var(--accent);
+        font-size: 0.66rem;
+        font-weight: 760;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 1.05rem;
+    }
+
+    .cover-title {
+        margin: 0;
+        max-width: 760px;
+        color: #111820;
+        font-size: clamp(2.7rem, 4.6vw, 4.8rem);
+        line-height: 1.04;
+        letter-spacing: -0.055em;
+        font-weight: 690;
+    }
+
+    .cover-title em {
+        font-style: normal;
+        color: #244F95;
+    }
+
+    .cover-description {
+        margin-top: 1.55rem;
+        max-width: 680px;
+        color: #5E6977;
+        font-size: 0.98rem;
+        line-height: 1.78;
+        word-break: keep-all;
+    }
+
+    .cover-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .cover-meta span {
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 0.68rem;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        color: #576372;
+        background: #FAFBFC;
+        font-size: 0.68rem;
+        font-weight: 600;
+    }
+
+    .cover-preview {
+        background: #F1F4F7;
+        padding: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-window {
+        width: 100%;
+        max-width: 480px;
+        background: #FFFFFF;
+        border: 1px solid #D8DEE5;
+        border-radius: 8px;
+        box-shadow: 0 18px 45px rgba(16, 24, 32, 0.08);
+        overflow: hidden;
+    }
+
+    .product-window-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        min-height: 42px;
+        padding: 0 0.8rem;
+        border-bottom: 1px solid #E7EAEE;
+        background: #FAFBFC;
+    }
+
+    .window-dots {
+        display: flex;
+        gap: 5px;
+    }
+
+    .window-dots i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #C8CED6;
+        display: block;
+    }
+
+    .window-title {
+        color: #6F7B89;
+        font-size: 0.62rem;
+        font-weight: 650;
+    }
+
+    .product-window-body {
+        padding: 1.05rem;
+    }
+
+    .preview-query {
+        padding: 0.8rem 0.85rem;
+        border: 1px solid #E1E6EA;
+        border-radius: 6px;
+        background: #FFFFFF;
+    }
+
+    .preview-kicker {
+        color: #8A94A3;
+        font-size: 0.58rem;
+        font-weight: 760;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .preview-question {
+        margin-top: 0.35rem;
+        color: #18202A;
+        font-size: 0.79rem;
+        font-weight: 620;
+        line-height: 1.55;
+    }
+
+    .preview-flow {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.45rem;
+        margin: 0.8rem 0;
+    }
+
+    .preview-node {
+        padding: 0.58rem 0.4rem;
+        border: 1px solid #E1E6EA;
+        border-radius: 5px;
+        background: #F9FAFB;
+        text-align: center;
+    }
+
+    .preview-node b {
+        display: block;
+        color: #293340;
+        font-size: 0.62rem;
+        font-weight: 680;
+    }
+
+    .preview-node span {
+        display: block;
+        margin-top: 0.12rem;
+        color: #8A94A3;
+        font-size: 0.52rem;
+    }
+
+    .preview-answer {
+        border-left: 2px solid #315FBA;
+        padding: 0.78rem 0.8rem;
+        background: #F7F9FC;
+    }
+
+    .preview-answer strong {
+        display: block;
+        color: #27313D;
+        font-size: 0.67rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .preview-answer p {
+        margin: 0;
+        color: #596575;
+        font-size: 0.64rem;
+        line-height: 1.55;
+    }
+
+    .preview-sources {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.7rem;
+        margin-top: 0.75rem;
+        padding-top: 0.68rem;
+        border-top: 1px solid #EDF0F2;
+        color: #8A94A3;
+        font-size: 0.54rem;
+    }
+
+    .home-actions {
+        margin: 0.15rem 0 1.7rem;
+    }
+
+    .home-actions [data-testid="stButton"] button {
+        min-height: 42px;
+    }
+
+    .home-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        overflow: hidden;
+        margin: 1.1rem 0 1.4rem;
+    }
+
+    .home-strip-item {
+        padding: 1.25rem 1.35rem;
+        border-right: 1px solid var(--line);
+    }
+
+    .home-strip-item:last-child {
+        border-right: 0;
+    }
+
+    .home-strip-index {
+        color: #8A94A3;
+        font-size: 0.6rem;
+        font-weight: 760;
+        letter-spacing: 0.08em;
+    }
+
+    .home-strip-title {
+        margin-top: 0.48rem;
+        color: #18202A;
+        font-size: 0.86rem;
+        font-weight: 670;
+    }
+
+    .home-strip-desc {
+        margin-top: 0.3rem;
+        color: #6D7886;
+        font-size: 0.7rem;
+        line-height: 1.55;
+    }
+
+    .home-section {
+        margin-top: 2.4rem;
+    }
+
+    .home-section-head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-bottom: 0.8rem;
+        margin-bottom: 0.9rem;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .home-section-head h2 {
+        margin: 0;
+        color: #111820;
+        font-size: 1.24rem;
+        font-weight: 680;
+        letter-spacing: -0.025em;
+    }
+
+    .home-section-head p {
+        margin: 0;
+        color: #7B8592;
+        font-size: 0.69rem;
+    }
+
+    .entry-card {
+        min-height: 182px;
+        padding: 1.2rem 1.2rem 1.1rem;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface);
+    }
+
+    .entry-eyebrow {
+        color: var(--accent);
+        font-size: 0.6rem;
+        font-weight: 760;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .entry-title {
+        margin-top: 1rem;
+        color: #18202A;
+        font-size: 1rem;
+        font-weight: 680;
+        letter-spacing: -0.015em;
+    }
+
+    .entry-desc {
+        margin-top: 0.42rem;
+        color: #697482;
+        font-size: 0.72rem;
+        line-height: 1.6;
+    }
+
+    .entry-meta {
+        margin-top: 1.15rem;
+        padding-top: 0.7rem;
+        border-top: 1px solid #EDF0F2;
+        color: #8A94A3;
+        font-size: 0.62rem;
+    }
+
+    .home-architecture {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #FFFFFF;
+    }
+
+    .home-architecture-item {
+        position: relative;
+        padding: 1.3rem 1.1rem;
+        border-right: 1px solid var(--line);
+        min-height: 142px;
+    }
+
+    .home-architecture-item:last-child {
+        border-right: 0;
+    }
+
+    .home-architecture-item b {
+        display: block;
+        color: #1D2732;
+        font-size: 0.78rem;
+        font-weight: 680;
+    }
+
+    .home-architecture-item span {
+        display: block;
+        margin-top: 0.35rem;
+        color: #7A8592;
+        font-size: 0.65rem;
+        line-height: 1.5;
+    }
+
+    .home-architecture-item small {
+        position: absolute;
+        left: 1.1rem;
+        bottom: 1rem;
+        color: #A0A8B2;
+        font-size: 0.56rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+    }
+
+    .home-footer-band {
+        margin-top: 2.4rem;
+        padding: 1.5rem 1.55rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+    }
+
+    .home-footer-band strong {
+        color: #18202A;
+        font-size: 0.86rem;
+    }
+
+    .home-footer-band span {
+        color: #7A8592;
+        font-size: 0.68rem;
+    }
+
+    [data-testid="stToolbar"] {
+        visibility: hidden;
+        height: 0;
+    }
+
+    #MainMenu {
+        visibility: hidden;
+    }
+
     @media (max-width: 900px) {
         .block-container {
             padding-top: 1.6rem;
@@ -898,6 +1299,40 @@ st.markdown(
 
         .kpi-value {
             font-size: 1.18rem;
+        }
+
+        .cover-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .cover-copy {
+            padding: 2.6rem 1.7rem 2.2rem;
+            border-right: 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .cover-preview {
+            padding: 1.5rem;
+        }
+
+        .cover-title {
+            font-size: 2.55rem;
+        }
+
+        .home-strip,
+        .home-architecture {
+            grid-template-columns: 1fr;
+        }
+
+        .home-strip-item,
+        .home-architecture-item {
+            border-right: 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .home-strip-item:last-child,
+        .home-architecture-item:last-child {
+            border-bottom: 0;
         }
     }
     </style>
@@ -945,6 +1380,7 @@ with st.sidebar:
     page = st.radio(
         "Navigation",
         [
+            "Home",
             "Overview",
             "Ask",
             "Knowledge Graph",
@@ -952,6 +1388,7 @@ with st.sidebar:
             "Evaluation",
             "Dataset",
         ],
+        key="nav_page",
         label_visibility="collapsed",
     )
 
@@ -980,7 +1417,203 @@ with st.sidebar:
     )
 
 
-if page == "Overview":
+if page == "Home":
+    st.markdown(
+        f"""
+        <div class="cover-shell">
+            <div class="cover-grid">
+                <section class="cover-copy">
+                    <div class="cover-label">Financial intelligence, grounded in disclosure data</div>
+                    <h1 class="cover-title">공시 데이터에서<br><em>근거 있는 재무 분석</em>까지.</h1>
+                    <div class="cover-description">
+                        OpenDART 재무정보를 Financial KG로 구조화하고, 분석 업무는 SKILL 단위로 분리했습니다.
+                        질문에 필요한 데이터와 계산 과정을 추적할 수 있어 결과뿐 아니라 근거까지 함께 확인할 수 있습니다.
+                    </div>
+                    <div class="cover-meta">
+                        <span>{summary["companies"]} companies loaded</span>
+                        <span>{summary["facts"]} financial facts</span>
+                        <span>{summary["skills"]} reusable SKILLs</span>
+                        <span>{len(evaluation_tasks)} evaluation tasks</span>
+                    </div>
+                </section>
+                <aside class="cover-preview">
+                    <div class="product-window">
+                        <div class="product-window-top">
+                            <div class="window-dots"><i></i><i></i><i></i></div>
+                            <div class="window-title">FinSKILL-KG / Research Query</div>
+                        </div>
+                        <div class="product-window-body">
+                            <div class="preview-query">
+                                <div class="preview-kicker">Query</div>
+                                <div class="preview-question">삼성전자 2025년 부채비율과 근거를 보여줘</div>
+                            </div>
+                            <div class="preview-flow">
+                                <div class="preview-node"><b>Route</b><span>intent</span></div>
+                                <div class="preview-node"><b>Skill KG</b><span>plan</span></div>
+                                <div class="preview-node"><b>Financial KG</b><span>facts</span></div>
+                                <div class="preview-node"><b>Python</b><span>compute</span></div>
+                            </div>
+                            <div class="preview-answer">
+                                <strong>Evidence-based result</strong>
+                                <p>공시에서 확인된 부채와 자본 값을 사용해 부채비율을 계산하고, 사용한 사업보고서 출처를 함께 반환합니다.</p>
+                            </div>
+                            <div class="preview-sources">
+                                <span>Source · OpenDART</span>
+                                <span>Trace · 3 SKILLs</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    action_left, action_mid, action_right, action_space = st.columns([1.25, 1.05, 1.15, 4.1])
+    with action_left:
+        st.button(
+            "재무 질문 시작",
+            type="primary",
+            use_container_width=True,
+            on_click=lambda: st.session_state.update(nav_page="Ask"),
+        )
+    with action_mid:
+        st.button(
+            "기업 대시보드",
+            use_container_width=True,
+            on_click=lambda: st.session_state.update(nav_page="Overview"),
+        )
+    with action_right:
+        st.button(
+            "KG 살펴보기",
+            use_container_width=True,
+            on_click=lambda: st.session_state.update(nav_page="Knowledge Graph"),
+        )
+
+    st.markdown(
+        """
+        <div class="home-strip">
+            <div class="home-strip-item">
+                <div class="home-strip-index">01 / DATA</div>
+                <div class="home-strip-title">확인된 재무 수치만 사용</div>
+                <div class="home-strip-desc">Financial Fact를 기업, 연도, 지표, 공시 출처와 함께 저장해 숫자의 출처를 다시 확인할 수 있습니다.</div>
+            </div>
+            <div class="home-strip-item">
+                <div class="home-strip-index">02 / PROCESS</div>
+                <div class="home-strip-title">분석 절차를 SKILL로 분리</div>
+                <div class="home-strip-desc">계산, 추세, 비교, 리스크 분석을 작은 실행 단위로 나누고 Skill KG에서 dependency를 관리합니다.</div>
+            </div>
+            <div class="home-strip-item">
+                <div class="home-strip-index">03 / OUTPUT</div>
+                <div class="home-strip-title">결과와 실행 근거를 함께 제공</div>
+                <div class="home-strip-desc">최종 답변만 보여주지 않고 실행된 SKILL, 사용한 Financial Fact와 DART 출처까지 같이 남깁니다.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <div class="home-section">
+            <div class="home-section-head">
+                <h2>Workspace</h2>
+                <p>프로젝트에서 실제로 확인할 수 있는 기능</p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    feature_cols = st.columns(3)
+    feature_items = [
+        (
+            "RESEARCH",
+            "Ask",
+            "자연어 질문을 입력하고 계산 결과, 실행된 SKILL, 공시 Evidence를 한 화면에서 확인합니다.",
+            "Metric · Trend · Comparison · Summary",
+        ),
+        (
+            "GRAPH",
+            "Knowledge Graph",
+            "기업의 Financial Fact와 SKILL dependency를 각각 탐색하고 두 그래프가 연결되는 지점을 확인합니다.",
+            "Financial KG · Skill KG",
+        ),
+        (
+            "BENCHMARK",
+            "Evaluation",
+            "LLM Only와 KG 기반 시스템을 동일한 질문셋으로 비교해 수치 정확도와 근거성을 평가합니다.",
+            "36 tasks · 5 metrics",
+        ),
+    ]
+    for col, item in zip(feature_cols, feature_items):
+        with col:
+            st.markdown(
+                f"""
+                <div class="entry-card">
+                    <div class="entry-eyebrow">{item[0]}</div>
+                    <div class="entry-title">{item[1]}</div>
+                    <div class="entry-desc">{item[2]}</div>
+                    <div class="entry-meta">{item[3]}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    st.markdown(
+        """
+        <div class="home-section">
+            <div class="home-section-head">
+                <h2>From question to evidence</h2>
+                <p>숫자 계산은 LLM이 아니라 정해진 도구에서 처리합니다.</p>
+            </div>
+            <div class="home-architecture">
+                <div class="home-architecture-item">
+                    <b>User Question</b>
+                    <span>기업, 연도, 지표와 분석 의도를 입력합니다.</span>
+                    <small>INPUT</small>
+                </div>
+                <div class="home-architecture-item">
+                    <b>Skill Router</b>
+                    <span>질문에 맞는 target SKILL을 선택합니다.</span>
+                    <small>ROUTE</small>
+                </div>
+                <div class="home-architecture-item">
+                    <b>Skill KG</b>
+                    <span>선행 SKILL과 필요한 재무지표를 계획합니다.</span>
+                    <small>PLAN</small>
+                </div>
+                <div class="home-architecture-item">
+                    <b>Financial KG</b>
+                    <span>OpenDART에서 확인된 Financial Fact를 조회합니다.</span>
+                    <small>RETRIEVE</small>
+                </div>
+                <div class="home-architecture-item">
+                    <b>Evidence Result</b>
+                    <span>Python 계산 결과와 공시 출처를 함께 반환합니다.</span>
+                    <small>OUTPUT</small>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"""
+        <div class="home-footer-band">
+            <div>
+                <strong>Current data environment</strong><br>
+                <span>{escape_text(data_label)} · {summary["companies"]} companies · 2023–2025</span>
+            </div>
+            <span>FinSKILL-KG research prototype</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+elif page == "Overview":
     render_page_header(
         "Financial Research Workspace",
         "OpenDART 재무정보와 분석 절차를 분리해 관리하고, 질문부터 계산 근거까지 한 흐름에서 확인합니다.",
