@@ -12,6 +12,7 @@ from src.finskillkg.engine import FinSkillEngine
 from src.finskillkg.evaluation import load_evaluation_tasks
 from src.finskillkg.graph import DualKnowledgeGraph
 from src.finskillkg.llm import LLMClient
+from src.finskillkg.metrics import calculate_ratios, format_money
 from src.finskillkg.normalize import METRIC_LABELS, load_financial_csv
 from src.finskillkg.skills import SkillRegistry
 from src.finskillkg.visualize import (
@@ -22,7 +23,6 @@ from src.finskillkg.visualize import (
 
 
 APP_TITLE = "FinSKILL-KG"
-APP_SUBTITLE = "Financial Knowledge Graph × Skill Orchestration"
 
 
 def _setting(name: str, default: str = "") -> str:
@@ -85,25 +85,21 @@ def escape_text(value: object) -> str:
 
 
 def render_page_header(
-    eyebrow: str,
     title: str,
     description: str,
-    badge: str | None = None,
+    label: str | None = None,
 ) -> None:
-    badge_html = (
-        f'<span class="page-badge">{escape_text(badge)}</span>'
-        if badge
+    label_html = (
+        f'<div class="page-label">{escape_text(label)}</div>'
+        if label
         else ""
     )
     st.markdown(
         f"""
-        <div class="page-heading">
-            <div class="page-heading-top">
-                <div>
-                    <div class="eyebrow">{escape_text(eyebrow)}</div>
-                    <h1>{escape_text(title)}</h1>
-                </div>
-                {badge_html}
+        <div class="page-header">
+            {label_html}
+            <div class="page-title-row">
+                <h1>{escape_text(title)}</h1>
             </div>
             <p>{escape_text(description)}</p>
         </div>
@@ -112,36 +108,62 @@ def render_page_header(
     )
 
 
-def render_stat_card(label: str, value: object, helper: str = "") -> None:
-    helper_html = (
-        f'<div class="stat-helper">{escape_text(helper)}</div>'
-        if helper
+def render_kpi(label: str, value: object, note: str = "") -> None:
+    note_html = (
+        f'<div class="kpi-note">{escape_text(note)}</div>'
+        if note
         else ""
     )
     st.markdown(
         f"""
-        <div class="stat-card">
-            <div class="stat-label">{escape_text(label)}</div>
-            <div class="stat-value">{escape_text(value)}</div>
-            {helper_html}
+        <div class="kpi-card">
+            <div class="kpi-label">{escape_text(label)}</div>
+            <div class="kpi-value">{escape_text(value)}</div>
+            {note_html}
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def render_architecture_card(
-    number: str,
-    title: str,
-    description: str,
-    accent: str,
-) -> None:
+def render_section_title(title: str, description: str = "") -> None:
+    desc_html = (
+        f'<span>{escape_text(description)}</span>'
+        if description
+        else ""
+    )
     st.markdown(
         f"""
-        <div class="arch-card">
-            <div class="arch-step" style="color:{accent};">{escape_text(number)}</div>
-            <div class="arch-title">{escape_text(title)}</div>
-            <div class="arch-desc">{escape_text(description)}</div>
+        <div class="section-head">
+            <strong>{escape_text(title)}</strong>
+            {desc_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_pipeline_step(index: str, title: str, description: str) -> None:
+    st.markdown(
+        f"""
+        <div class="pipeline-step">
+            <div class="pipeline-index">{escape_text(index)}</div>
+            <div class="pipeline-copy">
+                <div class="pipeline-title">{escape_text(title)}</div>
+                <div class="pipeline-desc">{escape_text(description)}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_status_row(label: str, value: str, status: str = "neutral") -> None:
+    st.markdown(
+        f"""
+        <div class="status-row">
+            <span class="status-label">{escape_text(label)}</span>
+            <span class="status-value status-{escape_text(status)}">{escape_text(value)}</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -158,18 +180,18 @@ def render_evidence(evidence: list[dict]) -> None:
         source_name = escape_text(item.get("source_name", "DART source"))
         source_url = str(item.get("source_url", "")).strip()
         link = (
-            f'<a href="{escape_text(source_url)}" target="_blank">원문 보기</a>'
+            f'<a href="{escape_text(source_url)}" target="_blank">원문</a>'
             if source_url
             else ""
         )
         st.markdown(
             f"""
-            <div class="evidence-row">
+            <div class="source-row">
                 <div>
-                    <div class="evidence-name">{source_name}</div>
-                    <div class="evidence-id">{source_id}</div>
+                    <div class="source-name">{source_name}</div>
+                    <div class="source-id">{source_id}</div>
                 </div>
-                <div>{link}</div>
+                <div class="source-link">{link}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -187,8 +209,8 @@ def render_skill_trace(result: dict, registry: SkillRegistry) -> None:
         st.markdown(
             f"""
             <div class="trace-row">
-                <div class="trace-index">{idx:02d}</div>
-                <div>
+                <div class="trace-index">{idx}</div>
+                <div class="trace-copy">
                     <div class="trace-title">{escape_text(skill.name)}</div>
                     <div class="trace-id">{escape_text(skill_id)}</div>
                 </div>
@@ -198,42 +220,88 @@ def render_skill_trace(result: dict, registry: SkillRegistry) -> None:
         )
 
 
-def render_chat_result(item: dict, registry: SkillRegistry) -> None:
+def render_research_result(item: dict, registry: SkillRegistry) -> None:
     result = item["result"]
+    answer_html = escape_text(item["answer"]).replace(chr(10), "<br>")
 
-    with st.chat_message("user"):
-        st.write(item["query"])
+    st.markdown(
+        f"""
+        <div class="research-result">
+            <div class="research-query-label">Query</div>
+            <div class="research-query">{escape_text(item["query"])}</div>
+            <div class="result-rule"></div>
+            <div class="research-result-label">Result</div>
+            <div class="research-answer">{answer_html}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    with st.chat_message("assistant"):
-        st.markdown(
-            f"""
-            <div class="answer-card">
-                <div class="answer-kicker">ANALYSIS RESULT</div>
-                <div class="answer-body">{escape_text(item["answer"]).replace(chr(10), "<br>")}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+    if item["llm_error"]:
+        st.caption(
+            "LLM 문장 생성에 실패해 deterministic 결과를 표시했습니다: "
+            f"{item['llm_error']}"
         )
 
-        if item["llm_error"]:
-            st.caption(
-                "LLM 문장 생성에 실패해 deterministic 결과를 표시했습니다: "
-                f"{item['llm_error']}"
-            )
+    detail_left, detail_right = st.columns([1, 1])
+    with detail_left:
+        st.markdown('<div class="detail-panel">', unsafe_allow_html=True)
+        render_section_title("Execution trace", "실행된 SKILL 순서")
+        render_skill_trace(result, registry)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        with st.expander("분석 과정과 근거 보기", expanded=False):
-            left, right = st.columns([1, 1])
-            with left:
-                st.markdown("##### 실행 SKILL")
-                render_skill_trace(result, registry)
-            with right:
-                st.markdown("##### Evidence")
-                render_evidence(result["evidence"])
+    with detail_right:
+        st.markdown('<div class="detail-panel">', unsafe_allow_html=True)
+        render_section_title("Evidence", "답변에 사용한 공시 근거")
+        render_evidence(result.get("evidence", []))
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
+def latest_company_snapshot(
+    graph: DualKnowledgeGraph,
+    company_name: str,
+) -> tuple[int, pd.DataFrame, dict[str, float | None]]:
+    company_frame = graph.facts(company_name)
+    latest_year = int(company_frame["year"].max())
+    latest_frame = company_frame[company_frame["year"] == latest_year].copy()
+    latest_facts = {
+        row.metric: float(row.value)
+        for row in latest_frame.itertuples(index=False)
+    }
+
+    previous_frame = company_frame[company_frame["year"] < latest_year]
+    previous_facts: dict[str, float] = {}
+    if not previous_frame.empty:
+        previous_year = int(previous_frame["year"].max())
+        previous_facts = {
+            row.metric: float(row.value)
+            for row in previous_frame[previous_frame["year"] == previous_year].itertuples(
+                index=False
+            )
+        }
+
+    ratios = calculate_ratios(latest_facts, previous_facts)
+    return latest_year, latest_frame, ratios
+
+
+def metric_value(
+    frame: pd.DataFrame,
+    metric: str,
+) -> tuple[float | None, str]:
+    rows = frame[frame["metric"] == metric]
+    if rows.empty:
+        return None, "KRW"
+    row = rows.iloc[0]
+    return float(row["value"]), str(row["unit"])
+
+
+def format_ratio(value: float | None) -> str:
+    return "—" if value is None else f"{value:,.1f}%"
 
 
 st.set_page_config(
     page_title=APP_TITLE,
-    page_icon="◼",
+    page_icon="F",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -242,314 +310,433 @@ st.markdown(
     """
     <style>
     :root {
-        --ink: #111827;
-        --muted: #667085;
-        --line: #E4E7EC;
-        --panel: #FFFFFF;
-        --panel-soft: #F8FAFC;
-        --navy: #0B1F3A;
-        --blue: #2563EB;
-        --blue-soft: #EFF6FF;
-        --green: #0E9384;
-        --green-soft: #ECFDF3;
-        --amber: #B54708;
-        --amber-soft: #FFFAEB;
+        --canvas: #F6F7F9;
+        --surface: #FFFFFF;
+        --surface-subtle: #FAFBFC;
+        --ink: #18202A;
+        --ink-strong: #10161D;
+        --muted: #66717F;
+        --muted-2: #8A94A3;
+        --line: #E2E6EA;
+        --line-strong: #D5DAE0;
+        --nav: #101820;
+        --nav-soft: #17222D;
+        --nav-text: #D7DEE6;
+        --nav-muted: #7F8C9A;
+        --accent: #315FBA;
+        --accent-soft: #EEF3FB;
+        --positive: #247B5A;
+        --warning: #9A6700;
     }
 
     html, body, [class*="css"] {
-        font-family: Inter, Pretendard, "Noto Sans KR", -apple-system,
-            BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR",
+            sans-serif;
+        color: var(--ink);
     }
 
     [data-testid="stAppViewContainer"] {
-        background: #F5F7FA;
+        background: var(--canvas);
     }
 
     [data-testid="stHeader"] {
-        background: rgba(245, 247, 250, 0.82);
+        background: rgba(246, 247, 249, 0.92);
         backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(226, 230, 234, 0.7);
     }
 
     [data-testid="stSidebar"] {
-        background: #0B1F3A;
-        border-right: 0;
+        background: var(--nav);
+        border-right: 1px solid #0B1117;
+    }
+
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1.3rem;
     }
 
     [data-testid="stSidebar"] * {
-        color: #E6ECF5;
+        color: var(--nav-text);
+    }
+
+    [data-testid="stSidebar"] .stRadio > label {
+        display: none;
+    }
+
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] {
+        gap: 0.18rem;
     }
 
     [data-testid="stSidebar"] .stRadio label {
-        padding: 0.45rem 0.6rem;
-        border-radius: 8px;
+        min-height: 38px;
+        padding: 0.45rem 0.65rem;
+        border-radius: 6px;
+        transition: background 120ms ease;
     }
 
     [data-testid="stSidebar"] .stRadio label:hover {
-        background: rgba(255,255,255,0.08);
+        background: var(--nav-soft);
     }
 
-    [data-testid="stSidebar"] hr {
-        border-color: rgba(255,255,255,0.10);
+    [data-testid="stSidebar"] .stRadio label p {
+        font-size: 0.82rem;
+        font-weight: 540;
     }
 
     .block-container {
-        max-width: 1500px;
-        padding-top: 2.2rem;
+        max-width: 1440px;
+        padding-top: 2.4rem;
         padding-bottom: 4rem;
     }
 
     .brand {
-        padding: 0.4rem 0 1.25rem 0;
+        padding: 0.1rem 0.25rem 1.3rem 0.25rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 1rem;
+    }
+
+    .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 0.62rem;
     }
 
     .brand-mark {
-        width: 32px;
-        height: 32px;
-        display: inline-flex;
+        width: 28px;
+        height: 28px;
+        border: 1px solid rgba(255,255,255,0.24);
+        border-radius: 5px;
+        display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 9px;
-        background: linear-gradient(135deg, #4F8CF7, #18A0AE);
-        color: #fff;
-        font-weight: 800;
-        margin-bottom: 0.8rem;
+        color: #FFFFFF;
+        font-size: 0.78rem;
+        font-weight: 760;
     }
 
     .brand-name {
-        font-size: 1.12rem;
-        font-weight: 760;
-        letter-spacing: -0.02em;
-        color: #fff;
+        color: #F4F7FA;
+        font-size: 0.96rem;
+        font-weight: 680;
+        letter-spacing: -0.01em;
     }
 
-    .brand-sub {
-        font-size: 0.76rem;
-        color: #AFC0D6;
-        margin-top: 0.25rem;
-        line-height: 1.5;
-    }
-
-    .side-section {
+    .brand-caption {
+        margin-top: 0.42rem;
+        color: var(--nav-muted);
         font-size: 0.69rem;
+        line-height: 1.45;
+    }
+
+    .sidebar-label {
+        margin: 1rem 0.25rem 0.4rem;
+        color: var(--nav-muted);
+        font-size: 0.62rem;
         font-weight: 700;
-        color: #8498B3;
-        letter-spacing: 0.08em;
-        margin: 1.2rem 0 0.4rem;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
     }
 
-    .side-status {
-        margin-top: 1.25rem;
-        padding: 0.9rem;
-        border: 1px solid rgba(255,255,255,0.10);
-        border-radius: 12px;
-        background: rgba(255,255,255,0.04);
+    .sidebar-status {
+        margin-top: 1.2rem;
+        padding: 0.8rem 0.78rem;
+        border-top: 1px solid rgba(255,255,255,0.08);
     }
 
-    .status-line {
+    .sidebar-status-row {
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        gap: 0.5rem;
-        font-size: 0.76rem;
-        margin-bottom: 0.5rem;
+        gap: 0.75rem;
+        padding: 0.27rem 0;
+        font-size: 0.68rem;
     }
 
-    .status-line:last-child {
-        margin-bottom: 0;
+    .sidebar-status-key {
+        color: var(--nav-muted);
     }
 
-    .status-key {
-        color: #93A4BA;
-    }
-
-    .status-value {
-        color: #F3F6FA;
+    .sidebar-status-value {
+        color: #E9EEF3;
         font-weight: 600;
         text-align: right;
     }
 
-    .page-heading {
+    .page-header {
+        padding-bottom: 1.3rem;
         margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--line);
     }
 
-    .page-heading-top {
+    .page-label {
+        margin-bottom: 0.45rem;
+        color: var(--accent);
+        font-size: 0.64rem;
+        font-weight: 760;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .page-title-row {
         display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        align-items: flex-start;
     }
 
-    .eyebrow {
-        color: #4F6B8A;
-        font-size: 0.72rem;
-        font-weight: 800;
-        letter-spacing: 0.12em;
-        margin-bottom: 0.35rem;
-    }
-
-    .page-heading h1 {
+    .page-header h1 {
         margin: 0;
-        color: var(--navy);
-        font-size: 2.05rem;
-        line-height: 1.16;
-        letter-spacing: -0.035em;
+        color: var(--ink-strong);
+        font-size: 1.8rem;
+        line-height: 1.2;
+        font-weight: 690;
+        letter-spacing: -0.032em;
     }
 
-    .page-heading p {
-        margin: 0.65rem 0 0 0;
+    .page-header p {
+        margin: 0.5rem 0 0 0;
+        max-width: 820px;
         color: var(--muted);
-        font-size: 0.95rem;
+        font-size: 0.86rem;
         line-height: 1.65;
-        max-width: 840px;
     }
 
-    .page-badge {
+    .toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-bottom: 1.1rem;
+    }
+
+    .toolbar-chip {
         display: inline-flex;
         align-items: center;
-        min-height: 30px;
-        padding: 0 0.75rem;
-        border-radius: 999px;
-        background: #EEF4FF;
-        color: #3056D3;
-        font-size: 0.74rem;
-        font-weight: 700;
-        white-space: nowrap;
-        border: 1px solid #D6E4FF;
-    }
-
-    .hero {
-        padding: 2rem 2.1rem;
-        border-radius: 18px;
-        background:
-            radial-gradient(circle at 92% 18%, rgba(91, 153, 255, 0.18), transparent 26%),
-            linear-gradient(135deg, #0B1F3A 0%, #102D52 100%);
-        color: #fff;
-        margin-bottom: 1rem;
-        box-shadow: 0 14px 30px rgba(11,31,58,0.12);
-    }
-
-    .hero-kicker {
-        font-size: 0.73rem;
-        font-weight: 800;
-        color: #8FB8FF;
-        letter-spacing: 0.12em;
-    }
-
-    .hero-title {
-        margin: 0.55rem 0 0.7rem 0;
-        font-size: 2rem;
-        line-height: 1.25;
-        font-weight: 760;
-        letter-spacing: -0.035em;
-    }
-
-    .hero-desc {
-        max-width: 850px;
-        color: #CED9E8;
-        line-height: 1.65;
-        font-size: 0.94rem;
-    }
-
-    .stat-card {
-        background: #fff;
+        min-height: 28px;
+        padding: 0 0.62rem;
         border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 1rem 1.05rem;
-        min-height: 106px;
-        box-shadow: 0 2px 6px rgba(16,24,40,0.03);
+        border-radius: 5px;
+        background: var(--surface);
+        color: #4C5867;
+        font-size: 0.69rem;
+        font-weight: 560;
     }
 
-    .stat-label {
-        color: #667085;
-        font-size: 0.76rem;
+    .toolbar-chip strong {
+        color: var(--ink);
+        margin-left: 0.28rem;
         font-weight: 650;
     }
 
-    .stat-value {
-        color: #101828;
-        font-size: 1.75rem;
-        font-weight: 760;
-        margin-top: 0.2rem;
-        letter-spacing: -0.03em;
+    .kpi-card {
+        min-height: 92px;
+        padding: 0.88rem 0.95rem;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface);
     }
 
-    .stat-helper {
-        color: #98A2B3;
-        font-size: 0.7rem;
+    .kpi-label {
+        color: var(--muted);
+        font-size: 0.69rem;
+        font-weight: 600;
+    }
+
+    .kpi-value {
+        margin-top: 0.33rem;
+        color: var(--ink-strong);
+        font-size: 1.43rem;
+        font-weight: 680;
+        letter-spacing: -0.025em;
+        line-height: 1.15;
+    }
+
+    .kpi-note {
         margin-top: 0.25rem;
+        color: var(--muted-2);
+        font-size: 0.64rem;
     }
 
-    .section-title {
-        color: #101828;
-        font-size: 1rem;
-        font-weight: 760;
-        margin: 1.4rem 0 0.7rem 0;
-    }
-
-    .panel {
-        background: #fff;
+    .workspace-panel,
+    .detail-panel {
+        background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 16px;
-        padding: 1.15rem 1.2rem;
-        box-shadow: 0 2px 7px rgba(16,24,40,0.03);
+        border-radius: 7px;
     }
 
-    .arch-card {
-        min-height: 154px;
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 1rem;
-        box-shadow: 0 2px 6px rgba(16,24,40,0.03);
-    }
-
-    .arch-step {
-        font-size: 0.72rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-    }
-
-    .arch-title {
-        margin-top: 0.7rem;
-        color: #101828;
-        font-size: 0.98rem;
-        font-weight: 740;
-    }
-
-    .arch-desc {
-        margin-top: 0.4rem;
-        color: #667085;
-        font-size: 0.78rem;
-        line-height: 1.55;
-    }
-
-    .answer-card {
-        background: #FFFFFF;
-        border: 1px solid #DDE3EA;
-        border-left: 3px solid #2563EB;
-        border-radius: 12px;
+    .workspace-panel {
         padding: 1rem 1.05rem;
     }
 
-    .answer-kicker {
-        color: #315FBA;
-        font-size: 0.68rem;
-        font-weight: 800;
-        letter-spacing: 0.1em;
-        margin-bottom: 0.45rem;
+    .detail-panel {
+        padding: 0.95rem 1rem;
+        min-height: 100%;
     }
 
-    .answer-body {
-        color: #1D2939;
-        line-height: 1.75;
-        font-size: 0.93rem;
+    .section-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        margin: 0 0 0.78rem 0;
+        padding-bottom: 0.58rem;
+        border-bottom: 1px solid #EDF0F2;
+    }
+
+    .section-head strong {
+        color: var(--ink-strong);
+        font-size: 0.82rem;
+        font-weight: 680;
+    }
+
+    .section-head span {
+        color: var(--muted-2);
+        font-size: 0.65rem;
+        text-align: right;
+    }
+
+    .pipeline-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.72rem;
+        padding: 0.76rem 0;
+        border-bottom: 1px solid #EDF0F2;
+    }
+
+    .pipeline-step:last-child {
+        border-bottom: 0;
+    }
+
+    .pipeline-index {
+        width: 24px;
+        min-width: 24px;
+        height: 24px;
+        border: 1px solid #C9D5E7;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent);
+        background: #F7F9FC;
+        font-size: 0.62rem;
+        font-weight: 760;
+    }
+
+    .pipeline-title {
+        color: var(--ink);
+        font-size: 0.78rem;
+        font-weight: 650;
+    }
+
+    .pipeline-desc {
+        margin-top: 0.16rem;
+        color: var(--muted);
+        font-size: 0.68rem;
+        line-height: 1.5;
+    }
+
+    .status-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.8rem;
+        padding: 0.62rem 0;
+        border-bottom: 1px solid #EDF0F2;
+        font-size: 0.72rem;
+    }
+
+    .status-row:last-child {
+        border-bottom: 0;
+    }
+
+    .status-label {
+        color: var(--muted);
+    }
+
+    .status-value {
+        font-weight: 650;
+    }
+
+    .status-neutral {
+        color: var(--ink);
+    }
+
+    .status-good {
+        color: var(--positive);
+    }
+
+    .status-warning {
+        color: var(--warning);
+    }
+
+    .research-shell {
+        max-width: 1040px;
+        margin: 0 auto;
+    }
+
+    .research-intro {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 1rem 1.05rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .research-intro strong {
+        display: block;
+        color: var(--ink-strong);
+        font-size: 0.8rem;
+        margin-bottom: 0.24rem;
+    }
+
+    .research-intro span {
+        color: var(--muted);
+        font-size: 0.72rem;
+        line-height: 1.55;
+    }
+
+    .research-result {
+        margin-top: 1rem;
+        padding: 1.05rem 1.1rem;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+    }
+
+    .research-query-label,
+    .research-result-label {
+        color: var(--muted-2);
+        font-size: 0.62rem;
+        font-weight: 760;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .research-query {
+        margin-top: 0.3rem;
+        color: var(--ink-strong);
+        font-size: 0.94rem;
+        font-weight: 610;
+        line-height: 1.55;
+    }
+
+    .result-rule {
+        height: 1px;
+        background: #EDF0F2;
+        margin: 0.85rem 0;
+    }
+
+    .research-answer {
+        margin-top: 0.38rem;
+        color: #2C3642;
+        font-size: 0.86rem;
+        line-height: 1.78;
     }
 
     .trace-row {
         display: flex;
-        gap: 0.7rem;
+        gap: 0.62rem;
         align-items: flex-start;
-        padding: 0.62rem 0;
-        border-bottom: 1px solid #EEF1F4;
+        padding: 0.56rem 0;
+        border-bottom: 1px solid #EDF0F2;
     }
 
     .trace-row:last-child {
@@ -557,114 +744,167 @@ st.markdown(
     }
 
     .trace-index {
-        min-width: 29px;
-        height: 29px;
-        border-radius: 8px;
-        background: #EFF4FF;
-        color: #315FBA;
+        width: 22px;
+        min-width: 22px;
+        height: 22px;
+        border-radius: 4px;
+        background: var(--accent-soft);
+        color: var(--accent);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.68rem;
-        font-weight: 800;
+        font-size: 0.61rem;
+        font-weight: 760;
     }
 
     .trace-title {
-        color: #1D2939;
-        font-size: 0.82rem;
-        font-weight: 700;
-    }
-
-    .trace-id {
-        color: #98A2B3;
-        font-size: 0.68rem;
-        margin-top: 0.12rem;
-    }
-
-    .evidence-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.75rem;
-        padding: 0.72rem 0;
-        border-bottom: 1px solid #EEF1F4;
-    }
-
-    .evidence-row:last-child {
-        border-bottom: 0;
-    }
-
-    .evidence-name {
-        color: #344054;
-        font-size: 0.78rem;
+        color: var(--ink);
+        font-size: 0.73rem;
         font-weight: 650;
     }
 
-    .evidence-id {
-        color: #98A2B3;
-        font-size: 0.68rem;
-        margin-top: 0.12rem;
+    .trace-id {
+        margin-top: 0.1rem;
+        color: var(--muted-2);
+        font-size: 0.61rem;
+        line-height: 1.4;
     }
 
-    .evidence-row a {
-        color: #2563EB;
-        font-size: 0.74rem;
+    .source-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.7rem;
+        padding: 0.58rem 0;
+        border-bottom: 1px solid #EDF0F2;
+    }
+
+    .source-row:last-child {
+        border-bottom: 0;
+    }
+
+    .source-name {
+        color: var(--ink);
+        font-size: 0.72rem;
+        font-weight: 620;
+    }
+
+    .source-id {
+        margin-top: 0.1rem;
+        color: var(--muted-2);
+        font-size: 0.61rem;
+    }
+
+    .source-link a {
+        color: var(--accent);
+        font-size: 0.66rem;
         font-weight: 650;
         text-decoration: none;
     }
 
+    .company-heading {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .company-name {
+        color: var(--ink-strong);
+        font-size: 1.08rem;
+        font-weight: 680;
+        letter-spacing: -0.02em;
+    }
+
+    .company-meta {
+        margin-top: 0.18rem;
+        color: var(--muted-2);
+        font-size: 0.66rem;
+    }
+
+    .company-year {
+        color: var(--muted);
+        font-size: 0.68rem;
+        white-space: nowrap;
+    }
+
     [data-testid="stGraphVizChart"] {
-        background: #fff;
+        background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 16px;
-        padding: 1rem;
-        box-shadow: 0 2px 7px rgba(16,24,40,0.03);
+        border-radius: 7px;
+        padding: 0.75rem;
     }
 
     [data-testid="stDataFrame"] {
-        border-radius: 14px;
-        overflow: hidden;
         border: 1px solid var(--line);
+        border-radius: 7px;
+        overflow: hidden;
+        background: var(--surface);
     }
 
     [data-testid="stExpander"] {
         border: 1px solid var(--line);
-        border-radius: 12px;
-        background: #fff;
+        border-radius: 7px;
+        background: var(--surface);
     }
 
-    div[data-testid="stChatMessage"] {
-        background: transparent;
+    [data-testid="stSelectbox"] label,
+    [data-testid="stTextInput"] label,
+    [data-testid="stCheckbox"] label {
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-weight: 600;
     }
 
     .stButton > button,
     .stFormSubmitButton > button {
-        border-radius: 9px;
-        font-weight: 700;
+        min-height: 38px;
+        border-radius: 6px;
+        box-shadow: none;
+        font-size: 0.78rem;
+        font-weight: 650;
     }
 
-    .footer-note {
-        margin-top: 2.5rem;
-        color: #98A2B3;
-        font-size: 0.72rem;
-        text-align: right;
+    .stButton > button[kind="primary"],
+    .stFormSubmitButton > button[kind="primary"] {
+        background: #244F95;
+        border-color: #244F95;
+    }
+
+    div[data-testid="stMetric"] {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 0.7rem 0.85rem;
+    }
+
+    .stAlert {
+        border-radius: 7px;
+    }
+
+    footer {
+        visibility: hidden;
     }
 
     @media (max-width: 900px) {
-        .hero {
-            padding: 1.5rem;
+        .block-container {
+            padding-top: 1.6rem;
         }
-        .hero-title {
-            font-size: 1.55rem;
+
+        .page-header h1 {
+            font-size: 1.5rem;
         }
-        .page-heading h1 {
-            font-size: 1.65rem;
+
+        .kpi-value {
+            font-size: 1.18rem;
         }
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
 
 data_path = default_data_path()
 skills_dir = Path("skills")
@@ -683,21 +923,25 @@ summary = graph.summary()
 loaded_companies = set(graph.company_names())
 companies = graph.company_names()
 is_sample = data_path.name == "sample_financials.csv"
-data_label = "Sample Data" if is_sample else "OpenDART"
-llm_label = "Connected" if llm_client is not None else "Offline"
+data_label = "Sample" if is_sample else "OpenDART"
+llm_label = "Connected" if llm_client is not None else "Off"
+
 
 with st.sidebar:
     st.markdown(
         """
         <div class="brand">
-            <div class="brand-mark">F</div>
-            <div class="brand-name">FinSKILL-KG</div>
-            <div class="brand-sub">Grounded financial analysis with dual knowledge graphs</div>
+            <div class="brand-row">
+                <div class="brand-mark">F</div>
+                <div class="brand-name">FinSKILL-KG</div>
+            </div>
+            <div class="brand-caption">Financial research workspace</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    st.markdown('<div class="side-section">WORKSPACE</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="sidebar-label">Research</div>', unsafe_allow_html=True)
     page = st.radio(
         "Navigation",
         [
@@ -711,25 +955,24 @@ with st.sidebar:
         label_visibility="collapsed",
     )
 
-    st.markdown('<div class="side-section">ENVIRONMENT</div>', unsafe_allow_html=True)
     st.markdown(
         f"""
-        <div class="side-status">
-            <div class="status-line">
-                <span class="status-key">Data</span>
-                <span class="status-value">{escape_text(data_label)}</span>
+        <div class="sidebar-status">
+            <div class="sidebar-status-row">
+                <span class="sidebar-status-key">Data</span>
+                <span class="sidebar-status-value">{escape_text(data_label)}</span>
             </div>
-            <div class="status-line">
-                <span class="status-key">LLM</span>
-                <span class="status-value">{escape_text(llm_label)}</span>
+            <div class="sidebar-status-row">
+                <span class="sidebar-status-key">LLM</span>
+                <span class="sidebar-status-value">{escape_text(llm_label)}</span>
             </div>
-            <div class="status-line">
-                <span class="status-key">Companies</span>
-                <span class="status-value">{summary["companies"]}</span>
+            <div class="sidebar-status-row">
+                <span class="sidebar-status-key">Companies</span>
+                <span class="sidebar-status-value">{summary["companies"]}</span>
             </div>
-            <div class="status-line">
-                <span class="status-key">SKILLs</span>
-                <span class="status-value">{summary["skills"]}</span>
+            <div class="sidebar-status-row">
+                <span class="sidebar-status-key">SKILLs</span>
+                <span class="sidebar-status-value">{summary["skills"]}</span>
             </div>
         </div>
         """,
@@ -739,111 +982,206 @@ with st.sidebar:
 
 if page == "Overview":
     render_page_header(
-        "PROJECT OVERVIEW",
-        "재무 데이터를 근거로 분석하는 Dual KG 시스템",
-        "Financial KG는 재무 수치와 출처를 관리하고, Skill KG는 질문에 필요한 분석 순서를 관리합니다.",
-        badge=data_label,
+        "Financial Research Workspace",
+        "OpenDART 재무정보와 분석 절차를 분리해 관리하고, 질문부터 계산 근거까지 한 흐름에서 확인합니다.",
+        "Workspace",
     )
 
     st.markdown(
-        """
-        <div class="hero">
-            <div class="hero-kicker">FINANCIAL ANALYSIS COPILOT</div>
-            <div class="hero-title">숫자, 분석 절차, 근거를 분리해서 관리합니다.</div>
-            <div class="hero-desc">
-                OpenDART 재무정보를 Financial KG로 구조화하고, 재무비율 계산과 추세 분석,
-                기업 비교 같은 업무는 SKILL 단위로 나눴습니다. 질문이 들어오면 필요한 SKILL을
-                선택하고, KG에서 확인된 수치만 사용해 결과를 만듭니다.
-            </div>
+        f"""
+        <div class="toolbar">
+            <span class="toolbar-chip">Data <strong>{escape_text(data_label)}</strong></span>
+            <span class="toolbar-chip">Companies <strong>{summary["companies"]}</strong></span>
+            <span class="toolbar-chip">Financial Facts <strong>{summary["facts"]}</strong></span>
+            <span class="toolbar-chip">SKILLs <strong>{summary["skills"]}</strong></span>
+            <span class="toolbar-chip">Evaluation <strong>{len(evaluation_tasks)} tasks</strong></span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    stat_cols = st.columns(5)
-    stats = [
-        ("Loaded Companies", summary["companies"], "현재 분석 가능한 기업"),
-        ("Financial Facts", summary["facts"], "KG에 적재된 재무 수치"),
-        ("SKILLs", summary["skills"], "재사용 가능한 분석 단위"),
-        ("DART Cohort", len(cohort.companies), "실험 대상 기업"),
-        ("Eval Tasks", len(evaluation_tasks), "비교 평가 질문"),
-    ]
-    for col, (label, value, helper) in zip(stat_cols, stats):
-        with col:
-            render_stat_card(label, value, helper)
-
-    st.markdown('<div class="section-title">How it works</div>', unsafe_allow_html=True)
-    flow_cols = st.columns(4)
-    flow = [
-        ("01", "Route", "질문에서 기업, 연도, 지표와 분석 유형을 확인합니다.", "#2563EB"),
-        ("02", "Plan", "Skill KG에서 필요한 SKILL과 선행 dependency를 정합니다.", "#7F56D9"),
-        ("03", "Retrieve", "Financial KG에서 필요한 재무 수치와 출처를 가져옵니다.", "#0E9384"),
-        ("04", "Compute", "정해진 재무 공식은 Python으로 계산하고 근거와 함께 반환합니다.", "#B54708"),
-    ]
-    for col, item in zip(flow_cols, flow):
-        with col:
-            render_architecture_card(*item)
-
-    st.markdown('<div class="section-title">Evaluation setup</div>', unsafe_allow_html=True)
-    st.dataframe(
-        pd.DataFrame(
-            [
-                {
-                    "System": "LLM Only",
-                    "Financial KG": "No",
-                    "Skill KG": "No",
-                    "Calculation": "LLM",
-                },
-                {
-                    "System": "LLM + Financial KG",
-                    "Financial KG": "Yes",
-                    "Skill KG": "No",
-                    "Calculation": "LLM",
-                },
-                {
-                    "System": "LLM + Skill KG + Financial KG",
-                    "Financial KG": "Yes",
-                    "Skill KG": "Yes",
-                    "Calculation": "Python",
-                },
-            ]
-        ),
-        hide_index=True,
-        use_container_width=True,
+    selected_company = st.selectbox(
+        "Company",
+        companies,
+        key="overview_company",
     )
+    latest_year, latest_frame, ratios = latest_company_snapshot(
+        graph,
+        selected_company,
+    )
+    company_code = graph.company_code(selected_company)
+
+    revenue, revenue_unit = metric_value(latest_frame, "revenue")
+    operating_income, operating_unit = metric_value(
+        latest_frame,
+        "operating_income",
+    )
+
+    st.markdown(
+        f"""
+        <div class="company-heading">
+            <div>
+                <div class="company-name">{escape_text(selected_company)}</div>
+                <div class="company-meta">OpenDART corp code {escape_text(company_code)}</div>
+            </div>
+            <div class="company-year">{latest_year} FY</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    kpi_cols = st.columns(4)
+    kpi_items = [
+        (
+            "Revenue",
+            "—" if revenue is None else format_money(revenue, revenue_unit),
+            f"{latest_year} 사업연도",
+        ),
+        (
+            "Operating income",
+            "—"
+            if operating_income is None
+            else format_money(operating_income, operating_unit),
+            f"{latest_year} 사업연도",
+        ),
+        (
+            "Operating margin",
+            format_ratio(ratios.get("operating_margin")),
+            "영업이익 / 매출",
+        ),
+        (
+            "Debt ratio",
+            format_ratio(ratios.get("debt_ratio")),
+            "부채 / 자본",
+        ),
+    ]
+
+    for col, item in zip(kpi_cols, kpi_items):
+        with col:
+            render_kpi(*item)
+
+    st.write("")
+    left, right = st.columns([1.65, 1])
+
+    with left:
+        st.markdown('<div class="workspace-panel">', unsafe_allow_html=True)
+        render_section_title(
+            "Financial trend",
+            "단위: 조원",
+        )
+        company_frame = graph.facts(selected_company)
+        trend = company_frame[
+            company_frame["metric"].isin(["revenue", "operating_income"])
+        ].copy()
+        if not trend.empty:
+            trend["value_trillion"] = trend["value"] / 1_000_000_000_000
+            trend["metric_name"] = trend["metric"].map(
+                {
+                    "revenue": "Revenue",
+                    "operating_income": "Operating income",
+                }
+            )
+            chart_frame = trend.pivot_table(
+                index="year",
+                columns="metric_name",
+                values="value_trillion",
+                aggfunc="first",
+            ).sort_index()
+            st.line_chart(chart_frame, use_container_width=True)
+        else:
+            st.caption("표시할 추세 데이터가 없습니다.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with right:
+        st.markdown('<div class="workspace-panel">', unsafe_allow_html=True)
+        render_section_title(
+            "Analysis pipeline",
+            "질문 처리 순서",
+        )
+        render_pipeline_step(
+            "1",
+            "Route",
+            "질문에서 기업, 연도, 지표와 분석 유형을 확인합니다.",
+        )
+        render_pipeline_step(
+            "2",
+            "Plan",
+            "Skill KG에서 필요한 SKILL과 선행 단계를 정합니다.",
+        )
+        render_pipeline_step(
+            "3",
+            "Retrieve",
+            "Financial KG에서 필요한 수치와 공시 근거를 조회합니다.",
+        )
+        render_pipeline_step(
+            "4",
+            "Compute",
+            "정해진 공식은 Python으로 계산하고 근거와 함께 반환합니다.",
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.write("")
+    bottom_left, bottom_right = st.columns([1.65, 1])
+
+    with bottom_left:
+        st.markdown('<div class="workspace-panel">', unsafe_allow_html=True)
+        render_section_title(
+            "Latest financial facts",
+            f"{selected_company} {latest_year}",
+        )
+        fact_view = latest_frame.copy()
+        fact_view["Metric"] = fact_view["metric"].map(METRIC_LABELS)
+        fact_view["Value"] = [
+            format_money(float(row.value), str(row.unit))
+            for row in fact_view.itertuples(index=False)
+        ]
+        fact_view = fact_view[["Metric", "Value", "source_id"]].rename(
+            columns={"source_id": "Source"}
+        )
+        st.dataframe(
+            fact_view,
+            hide_index=True,
+            use_container_width=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with bottom_right:
+        st.markdown('<div class="workspace-panel">', unsafe_allow_html=True)
+        render_section_title(
+            "Workspace status",
+            "현재 로드 상태",
+        )
+        render_status_row(
+            "Financial data",
+            data_label,
+            "good" if not is_sample else "warning",
+        )
+        render_status_row(
+            "LLM rendering",
+            llm_label,
+            "good" if llm_client is not None else "neutral",
+        )
+        render_status_row(
+            "Loaded companies",
+            f'{summary["companies"]} / {len(cohort.companies)}',
+            "good" if summary["companies"] == len(cohort.companies) else "warning",
+        )
+        render_status_row(
+            "Evaluation tasks",
+            str(len(evaluation_tasks)),
+            "neutral",
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
 elif page == "Ask":
     render_page_header(
-        "INTERACTIVE DEMO",
-        "재무 질문하기",
-        "질문을 입력하면 선택된 SKILL, 계산 결과, 사용한 근거를 한 화면에서 확인할 수 있습니다.",
-        badge="LLM optional",
+        "Research query",
+        "재무 질문을 입력하면 사용한 SKILL, 계산 결과와 공시 근거를 함께 확인할 수 있습니다.",
+        "Ask",
     )
 
     first_company = companies[0]
     second_company = companies[1] if len(companies) > 1 else companies[0]
-
-    preset_col, option_col = st.columns([3, 1])
-    with preset_col:
-        st.markdown(
-            """
-            <div class="panel">
-                <div class="section-title" style="margin-top:0;">Example questions</div>
-                <div style="color:#667085;font-size:0.82rem;line-height:1.9;">
-                    재무상태 요약 / 부채비율 계산 / 영업이익률 추세 / 기업 비교
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with option_col:
-        use_llm = st.toggle(
-            "LLM 문장화",
-            value=False,
-            disabled=llm_client is None,
-            help="계산 결과와 evidence는 유지하고 최종 문장만 LLM이 정리합니다.",
-        )
-
     examples = [
         f"{first_company} 최근 3년 재무상태 분석해줘",
         f"{first_company} 2025년 부채비율 알려줘",
@@ -851,17 +1189,37 @@ elif page == "Ask":
         f"{first_company}와 {second_company} ROE 비교해줘",
     ]
 
-    selected_example = st.selectbox(
-        "예시 질문",
-        ["직접 입력"] + examples,
-        index=0,
-    )
-
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    for history_item in st.session_state.chat_history:
-        render_chat_result(history_item, registry)
+    st.markdown('<div class="research-shell">', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="research-intro">
+            <strong>Ask against verified financial facts</strong>
+            <span>
+                재무 수치는 Financial KG에서 조회하고, 계산식이 정해진 항목은 Python에서 처리합니다.
+                LLM 연결 시 최종 문장만 별도로 정리할 수 있습니다.
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    control_left, control_right = st.columns([3, 1])
+    with control_left:
+        selected_example = st.selectbox(
+            "예시 질문",
+            ["직접 입력"] + examples,
+            index=0,
+        )
+    with control_right:
+        use_llm = st.checkbox(
+            "LLM 문장화",
+            value=False,
+            disabled=llm_client is None,
+            help="계산 결과와 evidence는 유지하고 최종 문장만 LLM이 정리합니다.",
+        )
 
     with st.form("question_form", clear_on_submit=True):
         default_query = "" if selected_example == "직접 입력" else selected_example
@@ -869,9 +1227,12 @@ elif page == "Ask":
             "질문",
             value=default_query,
             placeholder="예: 삼성전자 2025년 부채비율 알려줘",
-            label_visibility="collapsed",
         )
-        submitted = st.form_submit_button("분석 실행", type="primary")
+        submitted = st.form_submit_button(
+            "분석 실행",
+            type="primary",
+            use_container_width=True,
+        )
 
     if submitted:
         query = query.strip()
@@ -883,15 +1244,27 @@ elif page == "Ask":
             st.rerun()
 
     if st.session_state.chat_history:
-        if st.button("대화 초기화"):
-            st.session_state.chat_history = []
-            st.rerun()
+        latest_item = st.session_state.chat_history[-1]
+        render_research_result(latest_item, registry)
+
+        history_cols = st.columns([1, 5])
+        with history_cols[0]:
+            if st.button("초기화", use_container_width=True):
+                st.session_state.chat_history = []
+                st.rerun()
+        with history_cols[1]:
+            if len(st.session_state.chat_history) > 1:
+                st.caption(
+                    f"현재 세션에서 {len(st.session_state.chat_history)}개의 질문을 실행했습니다."
+                )
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 elif page == "Knowledge Graph":
     render_page_header(
-        "GRAPH EXPLORER",
         "Knowledge Graph",
-        "Financial KG와 Skill KG를 분리해서 보고, 두 그래프가 어떤 지점에서 연결되는지 확인합니다.",
+        "Financial KG와 Skill KG를 분리해서 보고, 데이터와 분석 절차가 어떻게 연결되는지 확인합니다.",
+        "Graph",
     )
 
     graph_view = st.radio(
@@ -905,14 +1278,22 @@ elif page == "Knowledge Graph":
     if graph_view == "Financial KG":
         control_left, control_right = st.columns(2)
         with control_left:
-            selected_company = st.selectbox("기업", companies)
+            selected_company = st.selectbox(
+                "기업",
+                companies,
+                key="financial_graph_company",
+            )
         company_frame = graph.facts(selected_company)
-        available_years = sorted(int(value) for value in company_frame["year"].unique())
+        available_years = sorted(
+            int(value)
+            for value in company_frame["year"].unique()
+        )
         with control_right:
             selected_year = st.selectbox(
                 "사업연도",
                 available_years,
                 index=len(available_years) - 1,
+                key="financial_graph_year",
             )
 
         st.graphviz_chart(
@@ -920,18 +1301,29 @@ elif page == "Knowledge Graph":
             use_container_width=True,
         )
 
+        render_section_title(
+            "Financial facts",
+            f"{selected_company} {selected_year}",
+        )
         view = company_frame[company_frame["year"] == selected_year].copy()
-        view["metric_name"] = view["metric"].map(METRIC_LABELS)
-        view = view[
-            [
-                "metric_name",
-                "metric",
-                "value",
-                "unit",
-                "source_id",
-            ]
+        view["Metric"] = view["metric"].map(METRIC_LABELS)
+        view["Value"] = [
+            format_money(float(row.value), str(row.unit))
+            for row in view.itertuples(index=False)
         ]
-        st.dataframe(view, hide_index=True, use_container_width=True)
+        view = view[
+            ["Metric", "metric", "Value", "source_id"]
+        ].rename(
+            columns={
+                "metric": "Metric ID",
+                "source_id": "Source",
+            }
+        )
+        st.dataframe(
+            view,
+            hide_index=True,
+            use_container_width=True,
+        )
 
     else:
         skill_ids = sorted(registry.skills)
@@ -944,6 +1336,7 @@ elif page == "Knowledge Graph":
             "중심 SKILL",
             skill_ids,
             index=default_index,
+            key="skill_graph_focus",
         )
         st.caption(registry.skills[focus_skill].description)
         st.graphviz_chart(
@@ -953,27 +1346,23 @@ elif page == "Knowledge Graph":
 
 elif page == "SKILL Explorer":
     render_page_header(
-        "SKILL LIBRARY",
         "SKILL Explorer",
-        "각 SKILL의 dependency, input/output, validation 규칙과 실제 SKILL.md 내용을 함께 확인합니다.",
+        "각 분석 업무의 dependency, 입력과 출력, validation 규칙과 실제 SKILL.md를 확인합니다.",
+        "Library",
     )
 
     selected_skill_id = st.selectbox(
         "SKILL",
         sorted(registry.skills),
+        key="skill_explorer_select",
     )
     selected_skill = registry.skills[selected_skill_id]
 
     st.markdown(
         f"""
-        <div class="panel">
-            <div class="eyebrow">SELECTED SKILL</div>
-            <div style="font-size:1.15rem;font-weight:760;color:#101828;">
-                {escape_text(selected_skill.name)}
-            </div>
-            <div style="margin-top:0.35rem;color:#667085;font-size:0.82rem;">
-                {escape_text(selected_skill.description)}
-            </div>
+        <div class="workspace-panel">
+            <div class="company-name">{escape_text(selected_skill.name)}</div>
+            <div class="company-meta">{escape_text(selected_skill.description)}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -981,34 +1370,40 @@ elif page == "SKILL Explorer":
 
     st.write("")
     graph_col, meta_col = st.columns([1.45, 1])
+
     with graph_col:
         st.graphviz_chart(
             skill_detail_dot(registry, selected_skill_id),
             use_container_width=True,
         )
+
     with meta_col:
+        render_section_title("Metadata", "Skill KG attributes")
         metadata = pd.DataFrame(
             [
-                ("Requires", ", ".join(selected_skill.requires) or "-"),
-                ("Consumes", ", ".join(selected_skill.consumes) or "-"),
-                ("Produces", ", ".join(selected_skill.produces) or "-"),
-                ("Tools", ", ".join(selected_skill.tools) or "-"),
-                ("Validation", ", ".join(selected_skill.validation) or "-"),
-                ("Metrics", ", ".join(selected_skill.required_metrics) or "-"),
+                ("Requires", ", ".join(selected_skill.requires) or "—"),
+                ("Consumes", ", ".join(selected_skill.consumes) or "—"),
+                ("Produces", ", ".join(selected_skill.produces) or "—"),
+                ("Tools", ", ".join(selected_skill.tools) or "—"),
+                ("Validation", ", ".join(selected_skill.validation) or "—"),
+                ("Metrics", ", ".join(selected_skill.required_metrics) or "—"),
             ],
             columns=["Field", "Value"],
         )
-        st.dataframe(metadata, hide_index=True, use_container_width=True)
+        st.dataframe(
+            metadata,
+            hide_index=True,
+            use_container_width=True,
+        )
 
-    with st.expander("SKILL.md 원문 보기", expanded=True):
+    with st.expander("SKILL.md 보기", expanded=True):
         st.markdown(selected_skill.body)
 
 elif page == "Evaluation":
     render_page_header(
-        "BENCHMARK",
         "Evaluation",
-        "동일한 금융 질문을 세 시스템에 적용하고 수치 정확도, 근거, SKILL 선택 성능을 비교합니다.",
-        badge=f"{len(evaluation_tasks)} tasks",
+        "동일한 금융 질문을 세 시스템에 적용하고 수치 정확도, 근거와 SKILL 선택 성능을 비교합니다.",
+        "Benchmark",
     )
 
     task_frame = pd.DataFrame(
@@ -1024,56 +1419,75 @@ elif page == "Evaluation":
         ]
     )
 
-    count_frame = (
-        task_frame["Type"]
-        .value_counts()
-        .rename_axis("Type")
-        .reset_index(name="Tasks")
-    )
+    metric_cols = st.columns(5)
+    metric_items = [
+        ("Numerical", "Accuracy", "수치 정답"),
+        ("Evidence", "F1", "공시 근거"),
+        ("Skill", "Accuracy", "라우팅"),
+        ("Unsupported", "Rate", "근거 없는 주장"),
+        ("Latency", "ms", "처리 시간"),
+    ]
+    for col, item in zip(metric_cols, metric_items):
+        with col:
+            render_kpi(*item)
 
-    top_left, top_right = st.columns([1, 2])
-    with top_left:
-        st.markdown('<div class="section-title">Task distribution</div>', unsafe_allow_html=True)
-        st.dataframe(count_frame, hide_index=True, use_container_width=True)
-    with top_right:
-        st.markdown('<div class="section-title">Evaluation metrics</div>', unsafe_allow_html=True)
-        metric_cols = st.columns(5)
-        metric_labels = [
-            ("Numeric", "Accuracy"),
-            ("Evidence", "F1"),
-            ("Skill", "Accuracy"),
-            ("Unsupported", "Rate"),
-            ("Latency", "ms"),
-        ]
-        for col, (label, value) in zip(metric_cols, metric_labels):
-            with col:
-                render_stat_card(label, value)
-
+    st.write("")
     result_path = Path("outputs/evaluation/summary.csv")
-    st.markdown('<div class="section-title">Latest benchmark</div>', unsafe_allow_html=True)
 
-    if result_path.exists():
-        benchmark = pd.read_csv(result_path)
-        st.dataframe(benchmark, hide_index=True, use_container_width=True)
-        chart_frame = benchmark.set_index("system")[
-            ["numeric_accuracy", "evidence_f1", "skill_accuracy"]
-        ]
-        st.bar_chart(chart_frame)
-    else:
-        st.info(
-            "아직 benchmark 결과가 없습니다. 실제 DART 데이터와 LLM 설정 후 "
-            "python scripts/run_evaluation.py 를 실행하면 결과가 표시됩니다."
+    left, right = st.columns([1.55, 1])
+    with left:
+        render_section_title("Latest benchmark", "3-system comparison")
+        if result_path.exists():
+            benchmark = pd.read_csv(result_path)
+            st.dataframe(
+                benchmark,
+                hide_index=True,
+                use_container_width=True,
+            )
+            chart_columns = [
+                column
+                for column in [
+                    "numeric_accuracy",
+                    "evidence_f1",
+                    "skill_accuracy",
+                ]
+                if column in benchmark.columns
+            ]
+            if chart_columns and "system" in benchmark.columns:
+                chart_frame = benchmark.set_index("system")[chart_columns]
+                st.bar_chart(chart_frame)
+        else:
+            st.info(
+                "아직 benchmark 결과가 없습니다. 실제 DART 데이터와 LLM 설정 후 "
+                "python scripts/run_evaluation.py 를 실행하면 결과가 표시됩니다."
+            )
+
+    with right:
+        render_section_title("Task distribution", f"{len(evaluation_tasks)} tasks")
+        count_frame = (
+            task_frame["Type"]
+            .value_counts()
+            .rename_axis("Type")
+            .reset_index(name="Tasks")
+        )
+        st.dataframe(
+            count_frame,
+            hide_index=True,
+            use_container_width=True,
         )
 
     with st.expander("평가 질문 전체 보기"):
-        st.dataframe(task_frame, hide_index=True, use_container_width=True)
+        st.dataframe(
+            task_frame,
+            hide_index=True,
+            use_container_width=True,
+        )
 
 elif page == "Dataset":
     render_page_header(
-        "DATASET",
-        "OpenDART Cohort",
-        "실험에 사용하는 15개 기업과 현재 로드된 데이터 상태를 확인합니다.",
-        badge="2023–2025",
+        "Dataset",
+        "실험에 사용하는 OpenDART 기업 cohort와 현재 데이터 적재 상태를 확인합니다.",
+        "OpenDART",
     )
 
     cohort_rows = []
@@ -1083,31 +1497,38 @@ elif page == "Dataset":
                 "Company": company.name,
                 "Ticker": company.ticker,
                 "Sector": company.sector,
-                "Loaded": "Loaded" if company.name in loaded_companies else "Not loaded",
+                "Status": (
+                    "Loaded"
+                    if company.name in loaded_companies
+                    else "Not loaded"
+                ),
             }
         )
     cohort_frame = pd.DataFrame(cohort_rows)
+    loaded_count = int((cohort_frame["Status"] == "Loaded").sum())
 
-    loaded_count = int((cohort_frame["Loaded"] == "Loaded").sum())
     dataset_cols = st.columns(4)
-    dataset_stats = [
-        ("Target Companies", len(cohort.companies), "고정 cohort"),
+    dataset_items = [
+        ("Target companies", len(cohort.companies), "고정 cohort"),
         ("Loaded", loaded_count, data_label),
         ("Years", "2023–2025", "사업보고서"),
-        ("Financial Facts", summary["facts"], "현재 KG 기준"),
+        ("Financial facts", summary["facts"], "현재 KG"),
     ]
-    for col, item in zip(dataset_cols, dataset_stats):
+    for col, item in zip(dataset_cols, dataset_items):
         with col:
-            render_stat_card(*item)
+            render_kpi(*item)
 
     st.write("")
-    st.dataframe(cohort_frame, hide_index=True, use_container_width=True)
+    render_section_title(
+        "Company coverage",
+        "OpenDART cohort",
+    )
+    st.dataframe(
+        cohort_frame,
+        hide_index=True,
+        use_container_width=True,
+    )
 
-st.markdown(
-    """
-    <div class="footer-note">
-        FinSKILL-KG demo · Risk Signal은 프로젝트용 규칙이며 투자 판단이나 신용등급을 의미하지 않습니다.
-    </div>
-    """,
-    unsafe_allow_html=True,
+st.caption(
+    "Risk Signal은 프로젝트용 단순 규칙이며 투자 판단이나 신용등급을 의미하지 않습니다."
 )
