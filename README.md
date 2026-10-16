@@ -390,6 +390,26 @@ python scripts/run_evaluation.py --systems llm_skill_financial_kg
 
 ---
 
+## EduBridge에서 실행
+
+EduBridge에서는 별도 패키지 설치 없이 확인할 수 있는 실행 버전을 따로 뒀습니다.
+
+```bash
+python edubridge/main.py
+```
+
+이 버전은 Python 표준 라이브러리만 사용하고, sample data로 질문 처리, Financial KG, Skill KG, SKILL dependency를 확인할 수 있습니다.
+
+빠르게 결과만 보려면:
+
+```bash
+python edubridge/main.py --demo
+```
+
+자세한 내용은 [edubridge/README.md](edubridge/README.md)에 정리했습니다.
+
+---
+
 ## 실행
 
 Python 3.11 기준입니다.
