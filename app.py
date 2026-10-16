@@ -894,10 +894,11 @@ elif page == "Knowledge Graph":
         "Financial KG와 Skill KG를 분리해서 보고, 두 그래프가 어떤 지점에서 연결되는지 확인합니다.",
     )
 
-    graph_view = st.segmented_control(
+    graph_view = st.radio(
         "Graph type",
         ["Financial KG", "Skill KG"],
-        default="Financial KG",
+        index=0,
+        horizontal=True,
         label_visibility="collapsed",
     )
 
