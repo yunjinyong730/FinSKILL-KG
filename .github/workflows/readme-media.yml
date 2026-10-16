@@ -8,7 +8,6 @@ on:
       - visualize-demo-site
       - polish-readme-visuals
       - professional-demo-ui
-      - refine-professional-product-ui
     paths:
       - app.py
       - src/**
