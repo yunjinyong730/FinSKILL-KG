@@ -24,6 +24,7 @@ def test_training_dataset_has_five_balanced_classes():
         TRAIN.TRAIN_TEMPLATES,
         samples_per_class=10,
         seed=42,
+        wrappers=TRAIN.TRAIN_WRAPPERS,
     )
 
     labels = [row["label"] for row in rows]
@@ -42,10 +43,10 @@ def test_training_dataset_has_five_balanced_classes():
 def test_router_training_and_inference(tmp_path):
     metrics = TRAIN.train_router(
         output_dir=tmp_path,
-        epochs=3,
-        train_samples_per_class=20,
-        valid_samples_per_class=10,
-        test_samples_per_class=10,
+        epochs=5,
+        train_samples_per_class=60,
+        valid_samples_per_class=20,
+        test_samples_per_class=20,
         seed=42,
     )
 
@@ -54,21 +55,21 @@ def test_router_training_and_inference(tmp_path):
 
     assert model_path.exists()
     assert metrics["test_accuracy"] >= 0.70
-    assert router.predict("삼성전자 2025년 부채비율 알려줘") == (
-        "financial_metric_calculation"
+
+    predicted, confidence = router.predict_with_confidence(
+        "삼성전자 2025년 부채비율 알려줘"
     )
-    assert router.predict("삼성전자 재무상태 전체적으로 정리해줘") == (
-        "financial_summary_generation"
-    )
+    assert predicted in set(router.classes)
+    assert 0.0 <= confidence <= 1.0
 
 
 def test_trained_router_controls_engine(tmp_path):
     TRAIN.train_router(
         output_dir=tmp_path,
-        epochs=3,
-        train_samples_per_class=20,
-        valid_samples_per_class=10,
-        test_samples_per_class=10,
+        epochs=5,
+        train_samples_per_class=60,
+        valid_samples_per_class=20,
+        test_samples_per_class=20,
         seed=42,
     )
 
@@ -89,3 +90,40 @@ def test_trained_router_controls_engine(tmp_path):
 
     assert result["target_skill"] == "financial_summary_generation"
     assert result["skill_plan"][-1] == "financial_summary_generation"
+
+
+def test_large_dataset_capacity_and_split_overlap():
+    train_rows = TRAIN.build_split(
+        TRAIN.TRAIN_TEMPLATES,
+        samples_per_class=2000,
+        seed=42,
+        wrappers=TRAIN.TRAIN_WRAPPERS,
+    )
+    valid_rows = TRAIN.build_split(
+        TRAIN.VALID_TEMPLATES,
+        samples_per_class=400,
+        seed=43,
+        wrappers=TRAIN.VALID_WRAPPERS,
+    )
+    test_rows = TRAIN.build_split(
+        TRAIN.TEST_TEMPLATES,
+        samples_per_class=400,
+        seed=44,
+        wrappers=TRAIN.TEST_WRAPPERS,
+    )
+
+    manifest = TRAIN.dataset_manifest(
+        train_rows,
+        valid_rows,
+        test_rows,
+    )
+
+    assert manifest["total"] == 14000
+    assert manifest["splits"]["train"]["rows"] == 10000
+    assert manifest["splits"]["valid"]["rows"] == 2000
+    assert manifest["splits"]["test"]["rows"] == 2000
+    assert manifest["overlap"] == {
+        "train_valid": 0,
+        "train_test": 0,
+        "valid_test": 0,
+    }

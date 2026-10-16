@@ -48,6 +48,44 @@ METRICS = [
     "ROE",
     "매출",
     "영업이익",
+    "당기순이익",
+    "자산",
+    "부채",
+    "자본",
+    "매출성장률",
+]
+
+TRAIN_WRAPPERS = [
+    "{q}",
+    "{q}?",
+    "공시 기준으로 {q}",
+    "최근 자료 기준으로 {q}",
+    "재무제표 기준으로 {q}",
+    "분석용으로 {q}",
+    "근거 포함해서 {q}",
+    "수치 중심으로 {q}",
+]
+
+VALID_WRAPPERS = [
+    "{q}",
+    "{q}.",
+    "최신 공시 기준으로 {q}",
+    "검증용으로 {q}",
+    "재무 데이터 기준으로 {q}",
+    "결과만 간단히 {q}",
+    "사업보고서 기준으로 {q}",
+    "평가용으로 {q}",
+]
+
+TEST_WRAPPERS = [
+    "{q}",
+    "{q}?",
+    "가장 최근 자료 기준으로 {q}",
+    "근거를 확인하면서 {q}",
+    "수치와 같이 {q}",
+    "재무제표를 보고 {q}",
+    "한눈에 볼 수 있게 {q}",
+    "짧게 {q}",
 ]
 
 YEARS = ["2023", "2024", "2025"]
@@ -76,6 +114,13 @@ TRAIN_TEMPLATES = {
         "{company} 부채와 수익성 기준으로 위험한지 알려줘",
         "{company} 건전성 점검해줘",
         "{company} 최근 재무 위험 신호가 있어",
+        "{year}년 {company} 재무 위험 분석해줘",
+        "{company} {year}년 재무 리스크 확인해줘",
+        "{company} 재무상태가 불안한 편인지 알려줘",
+        "{company} 부채비율과 수익성 기준으로 안정적인지 봐줘",
+        "{company} 재무 건전성에 문제 없는지 확인해줘",
+        "{company} 최근 실적 기준으로 위험 신호 확인해줘",
+        "{year}년 {company} 부채와 수익성 기준 위험 수준 알려줘",
     ],
     "company_comparison": [
         "{company}와 {company2} {metric} 비교해줘",
@@ -92,6 +137,13 @@ TRAIN_TEMPLATES = {
         "{company} 최근 실적이랑 재무비율 같이 봐줘",
         "{company} 재무 요약해줘",
         "{company} 전체 재무 분석 부탁해",
+        "{year}년 {company} 재무상태 정리해줘",
+        "{company} {year}년 재무 요약해줘",
+        "{company} 실적과 재무비율을 같이 정리해줘",
+        "{company} 최근 재무 흐름을 전체적으로 설명해줘",
+        "{company} 매출 수익성 부채 수준까지 한 번에 봐줘",
+        "{company} 재무 상태를 종합적으로 정리해줘",
+        "{year}년 {company} 실적 재무비율 재무상태를 같이 정리해줘",
     ],
 }
 
@@ -107,6 +159,8 @@ VALID_TEMPLATES = {
     "financial_risk_analysis": [
         "{company} 재무적으로 위험한 편이야",
         "{company} 재무 건전성 체크",
+        "{year}년 {company} 재무 위험 수준 확인",
+        "{company} 부채와 수익성으로 안정성 평가해줘",
     ],
     "company_comparison": [
         "{company}와 {company2}의 {metric} 차이를 비교",
@@ -115,6 +169,8 @@ VALID_TEMPLATES = {
     "financial_summary_generation": [
         "{company} 재무상태를 전체적으로 설명해줘",
         "{company} 최근 재무 정보 요약",
+        "{year}년 {company} 재무 전체 요약",
+        "{company} 실적과 주요 재무비율을 한 번에 정리",
     ],
 }
 
@@ -130,6 +186,8 @@ TEST_TEMPLATES = {
     "financial_risk_analysis": [
         "{company} 재무 위험도가 어느 정도야",
         "{company} 수익성과 부채 기준 리스크 분석",
+        "{year}년 {company} 재무 위험 신호 확인해줘",
+        "{company} 최근 재무가 안정적인지 봐줘",
     ],
     "company_comparison": [
         "{company}와 {company2} 중 {metric} 기준으로 비교해줘",
@@ -138,6 +196,8 @@ TEST_TEMPLATES = {
     "financial_summary_generation": [
         "{company} 재무를 전체적으로 정리해줘",
         "{company} 재무상태 한 번에 설명",
+        "{year}년 {company} 실적과 재무비율 전체 정리",
+        "{company} 최근 재무 상황을 종합해서 알려줘",
     ],
 }
 
@@ -178,14 +238,20 @@ def build_split(
     templates: dict[str, list[str]],
     samples_per_class: int,
     seed: int,
+    wrappers: list[str] | None = None,
 ) -> list[dict]:
     rng = random.Random(seed)
     rows = []
+    wrappers = wrappers or TRAIN_WRAPPERS
 
     for label, label_templates in templates.items():
         candidates = []
         for template in label_templates:
-            candidates.extend(_template_candidates(template))
+            for question in _template_candidates(template):
+                candidates.extend(
+                    wrapper.format(q=question)
+                    for wrapper in wrappers
+                )
 
         questions = sorted(set(candidates))
         rng.shuffle(questions)
@@ -206,6 +272,47 @@ def build_split(
 
     rng.shuffle(rows)
     return rows
+
+def dataset_manifest(
+    train_rows: list[dict],
+    valid_rows: list[dict],
+    test_rows: list[dict],
+) -> dict:
+    splits = {
+        "train": train_rows,
+        "valid": valid_rows,
+        "test": test_rows,
+    }
+    question_sets = {
+        name: {row["question"] for row in rows}
+        for name, rows in splits.items()
+    }
+
+    overlaps = {
+        "train_valid": len(question_sets["train"] & question_sets["valid"]),
+        "train_test": len(question_sets["train"] & question_sets["test"]),
+        "valid_test": len(question_sets["valid"] & question_sets["test"]),
+    }
+    if any(overlaps.values()):
+        raise RuntimeError(f"dataset split overlap detected: {overlaps}")
+
+    manifest = {
+        "total": sum(len(rows) for rows in splits.values()),
+        "splits": {},
+        "overlap": overlaps,
+    }
+    for name, rows in splits.items():
+        counts = {}
+        for row in rows:
+            counts[row["label"]] = counts.get(row["label"], 0) + 1
+        manifest["splits"][name] = {
+            "rows": len(rows),
+            "unique_questions": len(question_sets[name]),
+            "class_distribution": counts,
+        }
+
+    return manifest
+
 
 def save_rows(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -243,9 +350,9 @@ def evaluate(
 def train_router(
     output_dir: str | Path = "edubridge/artifacts",
     epochs: int = 20,
-    train_samples_per_class: int = 80,
-    valid_samples_per_class: int = 25,
-    test_samples_per_class: int = 25,
+    train_samples_per_class: int = 2000,
+    valid_samples_per_class: int = 400,
+    test_samples_per_class: int = 400,
     seed: int = RANDOM_SEED,
 ) -> dict:
     output = Path(output_dir)
@@ -256,21 +363,38 @@ def train_router(
         TRAIN_TEMPLATES,
         train_samples_per_class,
         seed,
+        TRAIN_WRAPPERS,
     )
     valid_rows = build_split(
         VALID_TEMPLATES,
         valid_samples_per_class,
         seed + 1,
+        VALID_WRAPPERS,
     )
     test_rows = build_split(
         TEST_TEMPLATES,
         test_samples_per_class,
         seed + 2,
+        TEST_WRAPPERS,
     )
+
+    manifest = dataset_manifest(train_rows, valid_rows, test_rows)
 
     save_rows(dataset_dir / "train.csv", train_rows)
     save_rows(dataset_dir / "valid.csv", valid_rows)
     save_rows(dataset_dir / "test.csv", test_rows)
+    (dataset_dir / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    print(
+        "dataset "
+        f"train={len(train_rows):,} "
+        f"valid={len(valid_rows):,} "
+        f"test={len(test_rows):,} "
+        f"total={manifest['total']:,}"
+    )
 
     train_questions = [row["question"] for row in train_rows]
     train_labels = [row["label"] for row in train_rows]
@@ -398,11 +522,7 @@ def train_router(
         "seed": seed,
         "epochs": epochs,
         "classes": classes.tolist(),
-        "dataset": {
-            "train": len(train_rows),
-            "valid": len(valid_rows),
-            "test": len(test_rows),
-        },
+        "dataset": manifest,
         "best_valid_macro_f1": best_valid_f1,
         "test_accuracy": test_result["accuracy"],
         "test_macro_f1": test_result["macro_f1"],
@@ -432,9 +552,9 @@ def main() -> None:
         default="edubridge/artifacts",
     )
     parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--train-samples-per-class", type=int, default=80)
-    parser.add_argument("--valid-samples-per-class", type=int, default=25)
-    parser.add_argument("--test-samples-per-class", type=int, default=50)
+    parser.add_argument("--train-samples-per-class", type=int, default=2000)
+    parser.add_argument("--valid-samples-per-class", type=int, default=400)
+    parser.add_argument("--test-samples-per-class", type=int, default=400)
     parser.add_argument("--seed", type=int, default=RANDOM_SEED)
     args = parser.parse_args()
 
