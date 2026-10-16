@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import pandas as pd
 
 from .graph import DualKnowledgeGraph
@@ -16,12 +18,28 @@ from .skills import SkillRegistry
 
 
 class FinSkillEngine:
-    def __init__(self, graph: DualKnowledgeGraph, registry: SkillRegistry):
+    def __init__(
+        self,
+        graph: DualKnowledgeGraph,
+        registry: SkillRegistry,
+        skill_predictor: Callable[[str], str] | None = None,
+    ):
         self.graph = graph
         self.registry = registry
+        self.skill_predictor = skill_predictor
 
     def answer(self, query: str) -> dict:
-        route = route_query(query, self.graph, self.registry)
+        target_skill = (
+            self.skill_predictor(query)
+            if self.skill_predictor is not None
+            else None
+        )
+        route = route_query(
+            query,
+            self.graph,
+            self.registry,
+            target_skill=target_skill,
+        )
         if not route.companies:
             return self._result(
                 route,
