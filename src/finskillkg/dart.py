@@ -46,8 +46,11 @@ class OpenDartClient:
         for item in root.findall("list"):
             name = (item.findtext("corp_name") or "").strip()
             code = (item.findtext("corp_code") or "").strip()
+            ticker = (item.findtext("stock_code") or "").strip()
             if name and code:
                 mapping[name] = code
+            if ticker and code:
+                mapping[f"ticker:{ticker}"] = code
         return mapping
 
     def financial_statement_all(
