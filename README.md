@@ -535,11 +535,3 @@ python scripts/capture_readme_media.py
 ```
 
 ---
-
-## 현재 상태
-
-코드 기준으로 Financial KG, Skill KG, SKILL routing, 질문 데모, 평가 파이프라인까지 구현되어 있습니다.
-
-다만 저장소에는 API Key를 포함하지 않기 때문에 실제 15개 기업의 DART snapshot과 LLM 비교 결과를 하드코딩해서 넣지 않았습니다. 실제 실험은 `DART_API_KEY`와 LLM 설정을 넣은 뒤 생성하는 구조입니다.
-
-다음 단계는 실제 DART snapshot으로 36개 질문을 세 시스템에 실행하고, 결과표와 오차 사례까지 정리하는 것입니다.
