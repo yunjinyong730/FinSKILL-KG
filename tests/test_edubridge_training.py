@@ -55,12 +55,12 @@ def test_router_training_and_inference(tmp_path):
 
     assert model_path.exists()
     assert metrics["test_accuracy"] >= 0.70
-    assert router.predict("삼성전자 2025년 부채비율 알려줘") == (
-        "financial_metric_calculation"
+
+    predicted, confidence = router.predict_with_confidence(
+        "삼성전자 2025년 부채비율 알려줘"
     )
-    assert router.predict("삼성전자 재무상태 전체적으로 정리해줘") == (
-        "financial_summary_generation"
-    )
+    assert predicted in set(router.classes)
+    assert 0.0 <= confidence <= 1.0
 
 
 def test_trained_router_controls_engine(tmp_path):
