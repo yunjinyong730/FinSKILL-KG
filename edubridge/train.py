@@ -4,6 +4,7 @@ import argparse
 import copy
 import csv
 import json
+import itertools
 import random
 from pathlib import Path
 
@@ -141,25 +142,36 @@ TEST_TEMPLATES = {
 }
 
 
-def _fill_template(template: str, index: int) -> str:
-    company = COMPANIES[index % len(COMPANIES)]
-    company2 = COMPANIES[(index * 3 + 4) % len(COMPANIES)]
-    if company2 == company:
-        company2 = COMPANIES[(index + 1) % len(COMPANIES)]
-
-    metric = METRICS[(index * 5 + 1) % len(METRICS)]
-    year = YEARS[index % len(YEARS)]
-    start = YEARS[0]
-    end = YEARS[-1]
-
-    return template.format(
-        company=company,
-        company2=company2,
-        metric=metric,
-        year=year,
-        start=start,
-        end=end,
+def _template_candidates(template: str) -> list[str]:
+    companies = COMPANIES if "{company}" in template else [COMPANIES[0]]
+    company2_values = (
+        COMPANIES
+        if "{company2}" in template
+        else [COMPANIES[1]]
     )
+    metrics = METRICS if "{metric}" in template else [METRICS[0]]
+    years = YEARS if "{year}" in template else [YEARS[-1]]
+
+    questions = []
+    for company, company2, metric, year in itertools.product(
+        companies,
+        company2_values,
+        metrics,
+        years,
+    ):
+        if "{company2}" in template and company == company2:
+            continue
+        questions.append(
+            template.format(
+                company=company,
+                company2=company2,
+                metric=metric,
+                year=year,
+                start=YEARS[0],
+                end=YEARS[-1],
+            )
+        )
+    return questions
 
 
 def build_split(
@@ -172,34 +184,28 @@ def build_split(
 
     for label, label_templates in templates.items():
         candidates = []
-        cycle = max(samples_per_class * 3, 200)
+        for template in label_templates:
+            candidates.extend(_template_candidates(template))
 
-        for index in range(cycle):
-            template = label_templates[index % len(label_templates)]
-            candidates.append(
-                {
-                    "question": _fill_template(template, index),
-                    "label": label,
-                }
-            )
+        questions = sorted(set(candidates))
+        rng.shuffle(questions)
 
-        unique = {
-            (row["question"], row["label"]): row
-            for row in candidates
-        }
-        items = list(unique.values())
-        rng.shuffle(items)
-
-        if len(items) < samples_per_class:
+        if len(questions) < samples_per_class:
             raise RuntimeError(
                 f"{label} 샘플 수가 부족합니다: "
-                f"required={samples_per_class}, available={len(items)}"
+                f"required={samples_per_class}, available={len(questions)}"
             )
-        rows.extend(items[:samples_per_class])
+
+        rows.extend(
+            {
+                "question": question,
+                "label": label,
+            }
+            for question in questions[:samples_per_class]
+        )
 
     rng.shuffle(rows)
     return rows
-
 
 def save_rows(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -237,9 +243,9 @@ def evaluate(
 def train_router(
     output_dir: str | Path = "edubridge/artifacts",
     epochs: int = 20,
-    train_samples_per_class: int = 180,
-    valid_samples_per_class: int = 50,
-    test_samples_per_class: int = 50,
+    train_samples_per_class: int = 80,
+    valid_samples_per_class: int = 25,
+    test_samples_per_class: int = 25,
     seed: int = RANDOM_SEED,
 ) -> dict:
     output = Path(output_dir)
@@ -426,8 +432,8 @@ def main() -> None:
         default="edubridge/artifacts",
     )
     parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--train-samples-per-class", type=int, default=180)
-    parser.add_argument("--valid-samples-per-class", type=int, default=50)
+    parser.add_argument("--train-samples-per-class", type=int, default=80)
+    parser.add_argument("--valid-samples-per-class", type=int, default=25)
     parser.add_argument("--test-samples-per-class", type=int, default=50)
     parser.add_argument("--seed", type=int, default=RANDOM_SEED)
     args = parser.parse_args()
