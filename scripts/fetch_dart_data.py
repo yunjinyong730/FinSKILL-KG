@@ -29,6 +29,7 @@ def main() -> None:
     cohort = load_dart_cohort(args.config)
     companies = args.companies or [company.name for company in cohort.companies]
     years = args.years or list(cohort.years)
+    ticker_by_name = {company.name: company.ticker for company in cohort.companies}
 
     config = DartConfig.from_env()
     client = OpenDartClient(config.api_key, timeout=config.timeout)
@@ -37,9 +38,12 @@ def main() -> None:
     frames = []
     collected = []
     for company_name in companies:
-        if company_name not in codes:
+        corp_code = codes.get(company_name)
+        if not corp_code:
+            ticker = ticker_by_name.get(company_name, "")
+            corp_code = codes.get(f"ticker:{ticker}") if ticker else None
+        if not corp_code:
             raise KeyError(f"OpenDART 기업코드를 찾지 못했습니다: {company_name}")
-        corp_code = codes[company_name]
 
         for year in years:
             fs_div = "CFS"
