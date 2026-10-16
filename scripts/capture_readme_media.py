@@ -96,7 +96,7 @@ def main() -> None:
             page.goto(BASE_URL, wait_until="networkidle")
             page.screenshot(path=str(ASSET_DIR / "dashboard.png"))
 
-            page.get_by_text("Ask", exact=True).click()
+            page.locator('[data-testid="stSidebar"]').get_by_text("Ask", exact=True).click()
             page.locator('input[aria-label="질문"]').fill(
                 "샘플전자 최근 3년 재무상태 분석해줘"
             )
@@ -104,21 +104,21 @@ def main() -> None:
             page.get_by_text("Risk Signal", exact=False).wait_for(timeout=10000)
             page.screenshot(path=str(ASSET_DIR / "chat_demo.png"))
 
-            page.get_by_text("Knowledge Graph", exact=True).click()
+            page.locator('[data-testid="stSidebar"]').get_by_text("Knowledge Graph", exact=True).click()
             page.get_by_role("heading", name="Knowledge Graph").wait_for(timeout=10000)
             page.wait_for_timeout(900)
             page.screenshot(path=str(ASSET_DIR / "kg_explorer.png"))
 
-            page.get_by_text("SKILL Explorer", exact=True).click()
+            page.locator('[data-testid="stSidebar"]').get_by_text("SKILL Explorer", exact=True).click()
             page.get_by_role("heading", name="SKILL Explorer").wait_for(timeout=10000)
             page.wait_for_timeout(900)
             page.screenshot(path=str(ASSET_DIR / "skill_explorer.png"))
 
-            page.get_by_text("Evaluation", exact=True).click()
+            page.locator('[data-testid="stSidebar"]').get_by_text("Evaluation", exact=True).click()
             page.wait_for_timeout(700)
             page.screenshot(path=str(ASSET_DIR / "evaluation.png"))
 
-            page.get_by_text("Dataset", exact=True).click()
+            page.locator('[data-testid="stSidebar"]').get_by_text("Dataset", exact=True).click()
             page.wait_for_timeout(700)
             page.screenshot(path=str(ASSET_DIR / "cohort.png"))
 
