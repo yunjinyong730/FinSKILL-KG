@@ -43,10 +43,10 @@ def test_training_dataset_has_five_balanced_classes():
 def test_router_training_and_inference(tmp_path):
     metrics = TRAIN.train_router(
         output_dir=tmp_path,
-        epochs=3,
-        train_samples_per_class=20,
-        valid_samples_per_class=10,
-        test_samples_per_class=10,
+        epochs=5,
+        train_samples_per_class=60,
+        valid_samples_per_class=20,
+        test_samples_per_class=20,
         seed=42,
     )
 
@@ -66,10 +66,10 @@ def test_router_training_and_inference(tmp_path):
 def test_trained_router_controls_engine(tmp_path):
     TRAIN.train_router(
         output_dir=tmp_path,
-        epochs=3,
-        train_samples_per_class=20,
-        valid_samples_per_class=10,
-        test_samples_per_class=10,
+        epochs=5,
+        train_samples_per_class=60,
+        valid_samples_per_class=20,
+        test_samples_per_class=20,
         seed=42,
     )
 
