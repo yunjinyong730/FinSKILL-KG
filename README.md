@@ -406,6 +406,14 @@ pip install -r edubridge/requirements.txt
 python edubridge/train.py --epochs 20
 ```
 
+기본 학습 데이터는 5개 target SKILL을 균형 있게 구성해 총 14,000개 질문을 사용합니다.
+
+```text
+Train  10,000
+Valid   2,000
+Test    2,000
+```
+
 학습 결과는 `edubridge/artifacts/`에 저장됩니다.
 
 ```text
